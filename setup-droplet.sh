@@ -25,6 +25,14 @@ echo "Installing Docker Compose..."
 curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
+# Install PostgreSQL
+echo "Installing PostgreSQL..."
+apt-get install -y postgresql postgresql-contrib
+
+# Start PostgreSQL
+systemctl start postgresql
+systemctl enable postgresql
+
 # Install Nginx and Certbot
 echo "Installing Nginx and SSL tools..."
 apt-get install -y nginx certbot python3-certbot-nginx
@@ -35,6 +43,14 @@ cd /opt
 git clone https://github.com/nigelmcintyre/directory_factory.git
 cd directory_factory
 
+# Create PostgreSQL user and database
+echo "Setting up PostgreSQL database..."
+sudo -u postgres psql << SQL
+CREATE USER directory_user WITH PASSWORD 'your-postgres-password-here';
+CREATE DATABASE directory_factory OWNER directory_user;
+GRANT ALL PRIVILEGES ON DATABASE directory_factory TO directory_user;
+SQL
+
 # Create .env file
 echo "Creating environment file..."
 cat > .env << 'EOF'
@@ -44,8 +60,8 @@ DJANGO_ALLOWED_HOSTS=your-domain.com,www.your-domain.com
 POSTGRES_DB=directory_factory
 POSTGRES_USER=directory_user
 POSTGRES_PASSWORD=your-postgres-password-here
-POSTGRES_HOST=your-managed-db-host
-POSTGRES_PORT=25060
+POSTGRES_HOST=localhPASSWORD: Change to your actual password
+POSTGRES_PORT=5432
 GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 EOF
 
