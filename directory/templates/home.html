@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Explore Saunas in Ireland</h2>
+    <p class="text-lg text-slate-600">Find your perfect sauna experience with our advanced filters</p>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-[300px_1fr]">
+    <aside class="lg:sticky lg:top-24 h-fit">
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
+            <h2 class="text-xl font-bold text-slate-900 mb-1">Filters</h2>
+            <p class="text-sm text-slate-500 mb-4">Refine your search</p>
+            <form
+                class="flex flex-col h-[calc(100vh-10rem)]"
+                hx-get="."
+                hx-trigger="change delay:200ms"
+                hx-target="#listing-results"
+                hx-swap="innerHTML"
+                hx-push-url="true"
+                hx-indicator="#loading"
+            >
+                <div class="space-y-4 overflow-y-auto pr-2 pb-4">
+                    {% for filter in filters %}
+                        <div class="pb-3 border-b border-slate-100 last:border-0">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">{{ filter.label }}</label>
+                            {% if filter.type == "boolean" %}
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        name="{{ filter.key }}"
+                                        value="true"
+                                        class="h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary focus:ring-2"
+                                        {% if request.GET|dict_get:filter.key %}checked{% endif %}
+                                    />
+                                    <span class="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">Available</span>
+                                </label>
+                            {% else %}
+                                <select
+                                    name="{{ filter.key }}"
+                                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                                >
+                                    <option value="">All Options</option>
+                                    {% for choice in filter.choices %}
+                                        <option value="{{ choice }}" {% if request.GET|dict_get:filter.key == choice %}selected{% endif %}>{{ choice }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="pt-3">
+                    <a href="." class="w-full inline-flex items-center justify-center gap-2 text-center rounded-lg bg-gradient-to-r from-primary to-secondary px-4 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+                        <span id="loading" class="htmx-indicator inline-block">⏳ </span>
+                        Reset Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </aside>
+
+    <section>
+        <div class="mb-6 flex items-center justify-between bg-white rounded-xl p-4 border border-slate-200">
+            <h2 class="text-xl font-bold text-slate-900">Available Saunas</h2>
+            <span class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">{{ listings|length }} results</span>
+        </div>
+        <div id="listing-results" class="space-y-5">
+            {% include "partials/listing_results.html" %}
+        </div>
+    </section>
+</div>
+{% endblock %}

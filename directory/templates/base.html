@@ -1,0 +1,63 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title }}</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{{ meta_description|default:'Find the best local listings tailored to your needs.' }}" />
+    {% if meta_keywords %}<meta name="keywords" content="{{ meta_keywords }}" />{% endif %}
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{ page_title }}" />
+    <meta property="og:description" content="{{ meta_description|default:'Find the best local listings tailored to your needs.' }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://{{ domain }}{{ request.path }}" />
+    <meta property="og:site_name" content="{{ site_name }}" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="{{ page_title }}" />
+    <meta name="twitter:description" content="{{ meta_description|default:'Find the best local listings tailored to your needs.' }}" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0ea5e9',
+                        secondary: '#06b6d4',
+                    }
+                }
+            }
+        }
+    </script>
+    {% block schema %}{% endblock %}
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900 min-h-screen">
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    {{ site_name }}
+                </h1>
+                <a href="/" class="text-sm text-slate-600 hover:text-primary transition-colors">Home</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="mt-auto py-8 px-4 bg-white border-t border-slate-200">
+        <div class="mx-auto max-w-7xl text-center text-sm text-slate-600">
+            <p>&copy; 2026 {{ site_name }}. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
