@@ -22,6 +22,4 @@ RUN chmod +x manage.py
 EXPOSE 8000
 
 # Run migrations and start server
-CMD python manage.py makemigrations && \
-    python manage.py migrate && \
-    python manage.py runserver 0.0.0.0:8000
+CMD sh -c "python manage.py migrate && gunicorn directory_factory.wsgi:application --bind 0.0.0.0:8000"
