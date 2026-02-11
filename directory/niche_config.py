@@ -1,5 +1,5 @@
 SITE_NAME = "Sauna Directory"
-DOMAIN = "saunas.example.com"
+DOMAIN = "saunaguide.ie"
 
 FILTERS = [
     {
