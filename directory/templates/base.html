@@ -5,14 +5,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ page_title }}</title>
+    <link rel="canonical" href="https://{{ domain }}{{ request.path }}" />
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="{{ meta_description|default:'Find the best local listings tailored to your needs.' }}" />
+    <meta name="google-site-verification" content="66vZnCjb0GjOJEJUHaJhddVyqExAeDkkEYfczN5-ldk" />
+    <meta name="description" content="{{ meta_description|default:'Find the best saunas in Ireland with Sauna Guide.' }}" />
     {% if meta_keywords %}<meta name="keywords" content="{{ meta_keywords }}" />{% endif %}
     
     <!-- Open Graph -->
     <meta property="og:title" content="{{ page_title }}" />
-    <meta property="og:description" content="{{ meta_description|default:'Find the best local listings tailored to your needs.' }}" />
+    <meta property="og:description" content="{{ meta_description|default:'Find the best saunas in Ireland with Sauna Guide.' }}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://{{ domain }}{{ request.path }}" />
     <meta property="og:site_name" content="{{ site_name }}" />
@@ -20,7 +22,7 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="{{ page_title }}" />
-    <meta name="twitter:description" content="{{ meta_description|default:'Find the best local listings tailored to your needs.' }}" />
+    <meta name="twitter:description" content="{{ meta_description|default:'Find the best saunas in Ireland with Sauna Guide.' }}" />
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>

@@ -13,6 +13,15 @@ def _is_htmx(request: HttpRequest) -> bool:
     return request.headers.get("HX-Request", "false").lower() == "true"
 
 
+def robots_txt(request: HttpRequest) -> HttpResponse:
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        f"Sitemap: https://{DOMAIN}/sitemap.xml",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
+
+
 def home(request: HttpRequest) -> HttpResponse:
     listings = get_filtered_listings(request)
     context = {
@@ -22,7 +31,7 @@ def home(request: HttpRequest) -> HttpResponse:
         "listings": listings,
         "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
         "page_title": SITE_NAME,
-        "meta_description": f"Discover the best {SITE_NAME.lower()} options. Filter by your preferences and find exactly what you're looking for.",
+        "meta_description": "Find the best saunas in Ireland with Sauna Guide. Filter by county, rating, and amenities.",
     }
 
     if _is_htmx(request):
@@ -38,7 +47,10 @@ def pseo_landing(request: HttpRequest, city: str, category: str) -> HttpResponse
     )
 
     page_title = f"{category.title()} in {city.title()} | {SITE_NAME}"
-    meta_description = f"Find the best {category.lower()} options in {city.title()}. Browse {listings.count()} verified listings with detailed filters and information."
+    meta_description = (
+        f"Sauna Guide lists {listings.count()} {category.lower()} options in {city.title()}. "
+        "Compare amenities, ratings, and locations to find the best fit."
+    )
     
     # Generate Schema.org structured data
     breadcrumb_schema = generate_breadcrumb_schema(city, category, SITE_NAME)
@@ -67,7 +79,10 @@ def pseo_landing(request: HttpRequest, city: str, category: str) -> HttpResponse
 def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
     listing = get_object_or_404(Listing, slug=slug, is_active=True)
     page_title = f"{listing.name} | {SITE_NAME}"
-    meta_description = listing.description or f"Details for {listing.name} in {listing.city}."
+    meta_description = (
+        listing.description
+        or f"Sauna Guide listing for {listing.name} in {listing.city}. View details, amenities, and contact info."
+    )
 
     context = {
         "site_name": SITE_NAME,

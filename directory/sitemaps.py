@@ -31,3 +31,17 @@ class LandingPageSitemap(Sitemap):
                 "category": item["category"].lower(),
             },
         )
+
+
+class ListingSitemap(Sitemap):
+    changefreq = "weekly"
+    priority = 0.7
+
+    def items(self):
+        return Listing.objects.filter(is_active=True).order_by("-updated_at")
+
+    def lastmod(self, obj):
+        return obj.updated_at
+
+    def location(self, obj):
+        return reverse("listing_detail", kwargs={"slug": obj.slug})

@@ -1,4 +1,4 @@
-SITE_NAME = "Sauna Directory"
+SITE_NAME = "Sauna Guide"
 DOMAIN = "saunaguide.ie"
 
 FILTERS = [
