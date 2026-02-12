@@ -1,6 +1,28 @@
 {% extends "base.html" %}
 {% load dict_extras %}
 
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Sauna Guide",
+  "url": "https://saunaguide.ie",
+  "description": "Find the best saunas in Ireland. Browse our comprehensive directory of sauna facilities, wellness centers, and spa experiences across Ireland.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Sauna Guide",
+    "url": "https://saunaguide.ie"
+  },
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://saunaguide.ie/?city={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="mb-8">
     <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Sauna Guide: Explore Saunas in Ireland</h2>
@@ -67,6 +89,64 @@
         </div>
         <div id="listing-results" class="space-y-5">
             {% include "partials/listing_results.html" %}
+        </div>
+        
+        <!-- SEO Content Section -->
+        <div class="mt-12 space-y-8">
+            <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-md">
+                <h2 class="text-2xl font-bold text-slate-900 mb-4">Why Choose Sauna Guide?</h2>
+                <p class="text-slate-700 leading-relaxed mb-4">
+                    Sauna Guide is Ireland's most comprehensive directory of sauna facilities, wellness centers, and spa experiences. 
+                    Whether you're looking for a traditional Finnish sauna, an infrared sauna, or a luxurious spa day, we help you 
+                    discover the perfect sauna experience near you.
+                </p>
+                <p class="text-slate-700 leading-relaxed">
+                    Browse verified listings across Dublin, Cork, Galway, and every county in Ireland. Filter by amenities, ratings, 
+                    and location to find exactly what you're looking for.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">✨ Health Benefits of Saunas</h3>
+                    <ul class="space-y-2 text-slate-700">
+                        <li>• Improved cardiovascular health and circulation</li>
+                        <li>• Stress relief and mental relaxation</li>
+                        <li>• Muscle recovery and pain relief</li>
+                        <li>• Enhanced skin health and detoxification</li>
+                        <li>• Better sleep quality</li>
+                    </ul>
+                </div>
+                
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">🔍 How to Choose a Sauna</h3>
+                    <ul class="space-y-2 text-slate-700">
+                        <li>• <strong>Type:</strong> Traditional, infrared, or steam room?</li>
+                        <li>• <strong>Location:</strong> Find saunas near you</li>
+                        <li>• <strong>Amenities:</strong> Cold plunge, outdoor space, private rooms</li>
+                        <li>• <strong>Reviews:</strong> Check ratings and user feedback</li>
+                        <li>• <strong>Price:</strong> Compare value across facilities</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-md">
+                <h3 class="text-2xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold text-slate-900 mb-2">How often should I use a sauna?</h4>
+                        <p class="text-slate-700">Most health experts recommend 2-3 sauna sessions per week for optimal benefits. Always listen to your body and consult a healthcare provider if you have medical conditions.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-900 mb-2">What's the difference between traditional and infrared saunas?</h4>
+                        <p class="text-slate-700">Traditional saunas heat the air around you (typically 70-100°C), while infrared saunas use infrared light to heat your body directly at lower temperatures (45-60°C). Both offer unique benefits.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-900 mb-2">Are saunas safe for everyone?</h4>
+                        <p class="text-slate-700">While saunas are generally safe, pregnant women, people with heart conditions, and those with certain medical conditions should consult their doctor before using a sauna.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </div>

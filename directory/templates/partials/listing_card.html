@@ -4,7 +4,7 @@
         <a href="{% url 'listing_detail' listing.slug %}" class="block mb-4">
             <img
                 src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference={{ listing.photo_ref }}&key={{ google_maps_api_key }}"
-                alt="{{ listing.name }}"
+                alt="{{ listing.name }} in {{ listing.city }} - {{ listing.category }}"
                 class="w-full h-48 object-cover rounded-xl"
                 loading="lazy"
             />
