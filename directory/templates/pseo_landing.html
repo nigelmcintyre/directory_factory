@@ -26,6 +26,7 @@
             <form
                 class="space-y-5"
                 hx-get="."
+                hx-trigger="change delay:200ms"
                 hx-target="#listing-results"
                 hx-swap="innerHTML"
                 hx-push-url="true"
@@ -58,20 +59,18 @@
                         {% endif %}
                     </div>
                 {% endfor %}
-                <button type="submit" class="w-full rounded-lg bg-gradient-to-r from-primary to-secondary px-4 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-                    <span id="loading" class="htmx-indicator inline-block">⏳ </span>
-                    Apply Filters
-                </button>
+                <div class="pt-3">
+                    <a href="." class="w-full inline-flex items-center justify-center gap-2 text-center rounded-lg bg-gradient-to-r from-primary to-secondary px-4 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+                        <span id="loading" class="htmx-indicator inline-block">⏳ </span>
+                        Reset Filters
+                    </a>
+                </div>
             </form>
         </div>
     </aside>
 
     <section>
-        <div class="mb-6 flex items-center justify-between bg-white rounded-xl p-4 border border-slate-200">
-            <h2 class="text-xl font-bold text-slate-900">Available Listings</h2>
-            <span class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">{{ listings|length }} results</span>
-        </div>
-        <div id="listing-results" class="space-y-5">
+        <div id="listing-results">
             {% include "partials/listing_results.html" %}
         </div>
     </section>

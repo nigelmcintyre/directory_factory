@@ -1,9 +1,15 @@
-{% for listing in listings %}
-    {% include "partials/listing_card.html" with listing=listing %}
-{% empty %}
-    <div class="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
-        <div class="text-4xl mb-3">🔍</div>
-        <h3 class="text-lg font-semibold text-slate-900 mb-1">No results found</h3>
-        <p class="text-sm text-slate-600">Try adjusting your filters to see more options</p>
-    </div>
-{% endfor %}
+<div class="mb-6 flex items-center justify-between bg-white rounded-xl p-4 border border-slate-200">
+    <h2 class="text-xl font-bold text-slate-900">Available Saunas</h2>
+    <span class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">{{ listings|length }} results</span>
+</div>
+<div class="space-y-5">
+    {% for listing in listings %}
+        {% include "partials/listing_card.html" with listing=listing %}
+    {% empty %}
+        <div class="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 text-center">
+            <div class="text-4xl mb-3">🔍</div>
+            <h3 class="text-lg font-semibold text-slate-900 mb-1">No results found</h3>
+            <p class="text-sm text-slate-600">Try adjusting your filters to see more options</p>
+        </div>
+    {% endfor %}
+</div>
