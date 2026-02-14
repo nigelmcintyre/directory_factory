@@ -4,7 +4,7 @@ from directory.models import Listing
 
 
 class Command(BaseCommand):
-    help = "Analyze listings and show which city/category pages can be generated"
+    help = "Analyze listings and show which city pages can be generated"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -17,13 +17,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         min_listings = options["min_listings"]
 
-        # Get all active listings grouped by city and category
+        # Get all active listings grouped by city
         pages = (
             Listing.objects.filter(is_active=True)
-            .values("city", "category")
+            .values("city")
             .annotate(count=Count("id"))
             .filter(count__gte=min_listings)
-            .order_by("-count", "city", "category")
+            .order_by("-count", "city")
         )
 
         if not pages:
@@ -43,11 +43,10 @@ class Command(BaseCommand):
         total_listings = 0
         for page in pages:
             city = page["city"]
-            category = page["category"]
             count = page["count"]
             total_listings += count
 
-            url = f"/{city.lower()}/{category.lower()}/"
+            url = f"/{city.lower()}/"
             self.stdout.write(
                 f"  {self.style.HTTP_INFO(url)} - {count} listing{'s' if count != 1 else ''}"
             )
@@ -59,6 +58,6 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             self.style.SUCCESS(
-                f"✓ These URLs are automatically routed by /<city>/<category>/"
+                f"✓ These URLs are automatically routed by /<city>/"
             )
         )

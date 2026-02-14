@@ -6,7 +6,6 @@ class Listing(models.Model):
     slug = models.SlugField(max_length=255, unique=True)
     city = models.CharField(max_length=120)
     county = models.CharField(max_length=120, blank=True)
-    category = models.CharField(max_length=120)
     description = models.TextField(blank=True)
     address = models.CharField(max_length=500, blank=True)
     website = models.URLField(max_length=500, blank=True)
@@ -23,7 +22,7 @@ class Listing(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["city", "category"]),
+            models.Index(fields=["city"]),
         ]
 
     def __str__(self) -> str:

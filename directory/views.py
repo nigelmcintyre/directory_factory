@@ -53,20 +53,19 @@ def home(request: HttpRequest) -> HttpResponse:
     return render(request, "home.html", context)
 
 
-def pseo_landing(request: HttpRequest, city: str, category: str) -> HttpResponse:
+def pseo_landing(request: HttpRequest, city: str) -> HttpResponse:
     listings = get_filtered_listings(request).filter(
         city__iexact=city,
-        category__iexact=category,
     )
 
-    page_title = f"{category.title()} in {city.title()} | {SITE_NAME}"
+    page_title = f"Saunas in {city.title()} | {SITE_NAME}"
     meta_description = (
-        f"Sauna Guide lists {listings.count()} {category.lower()} options in {city.title()}. "
+        f"Sauna Guide lists {listings.count()} sauna options in {city.title()}. "
         "Compare amenities, ratings, and locations to find the best fit."
     )
     
     # Generate Schema.org structured data
-    breadcrumb_schema = generate_breadcrumb_schema(city, category, SITE_NAME)
+    breadcrumb_schema = generate_breadcrumb_schema(city, SITE_NAME)
     listing_schemas = [generate_listing_schema(listing) for listing in listings[:5]]  # Top 5 listings
     
     context = {
@@ -78,7 +77,6 @@ def pseo_landing(request: HttpRequest, city: str, category: str) -> HttpResponse
         "page_title": page_title,
         "meta_description": meta_description,
         "city": city,
-        "category": category,
         "schema_breadcrumb": mark_safe(json.dumps(breadcrumb_schema)),
         "schema_listings": mark_safe(json.dumps(listing_schemas)),
     }
@@ -129,8 +127,7 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
             desc_parts.append(f"in {listing.city}")
         if listing.rating:
             desc_parts.append(f"- Rated {listing.rating}★")
-        if listing.category:
-            desc_parts.append(f"- {listing.category}")
+
         desc_parts.append("View amenities, contact info, and location details.")
         meta_description = " ".join(desc_parts)
     
@@ -139,7 +136,6 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
         f"{listing.name}",
         f"sauna {listing.city}",
         listing.city,
-        listing.category,
     ]
     if listing.county:
         meta_keywords.append(f"sauna {listing.county}")

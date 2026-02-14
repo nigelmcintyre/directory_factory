@@ -8,7 +8,7 @@ def generate_listing_schema(listing):
         "@type": "LocalBusiness",
         "name": listing.name,
         "description": listing.description,
-        "url": f"https://{DOMAIN}/{listing.city.lower()}/{listing.category.lower()}/",
+        "url": f"https://{DOMAIN}/listing/{listing.slug}/",
     }
 
     # Add address if we have city info
@@ -22,7 +22,7 @@ def generate_listing_schema(listing):
     return schema
 
 
-def generate_breadcrumb_schema(city, category, site_name):
+def generate_breadcrumb_schema(city, site_name):
     """Generate Schema.org BreadcrumbList for pSEO pages."""
     return {
         "@context": "https://schema.org",
@@ -43,7 +43,7 @@ def generate_breadcrumb_schema(city, category, site_name):
             {
                 "@type": "ListItem",
                 "position": 3,
-                "name": f"{category.title()} in {city.title()}",
+                "name": f"Saunas in {city.title()}",
             },
         ],
     }

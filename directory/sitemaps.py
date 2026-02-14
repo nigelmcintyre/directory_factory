@@ -9,17 +9,17 @@ class LandingPageSitemap(Sitemap):
     priority = 0.8
 
     def items(self):
-        # Get all city/category combinations that have at least 2 listings
+        # Get all cities that have at least 2 listings
         pages = (
             Listing.objects.filter(is_active=True)
-            .values("city", "category")
+            .values("city")
             .annotate(count=Count("id"))
             .filter(count__gte=2)
-            .order_by("city", "category")
+            .order_by("city")
         )
         
         # Add homepage
-        return [{"city": None, "category": None}] + list(pages)
+        return [{"city": None}] + list(pages)
 
     def location(self, item):
         if item["city"] is None:
@@ -28,7 +28,6 @@ class LandingPageSitemap(Sitemap):
             "pseo_landing",
             kwargs={
                 "city": item["city"].lower(),
-                "category": item["category"].lower(),
             },
         )
 

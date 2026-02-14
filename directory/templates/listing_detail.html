@@ -72,7 +72,7 @@
             {% if listing.photo_ref and google_maps_api_key %}
                 <img
                     src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photoreference={{ listing.photo_ref }}&key={{ google_maps_api_key }}"
-                    alt="{{ listing.name }} - {{ listing.category }} in {{ listing.city }}{% if listing.county %}, {{ listing.county }}{% endif %}"
+                    alt="{{ listing.name }} in {{ listing.city }}{% if listing.county %}, {{ listing.county }}{% endif %}"
                     class="w-full h-80 object-cover rounded-xl mb-6"
                     loading="lazy"
                 />
@@ -83,8 +83,6 @@
                     <h1 class="text-3xl font-bold text-slate-900">{{ listing.name }}</h1>
                     <div class="mt-2 flex items-center gap-2 text-sm text-slate-600">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">{{ listing.city }}</span>
-                        <span class="text-slate-400">·</span>
-                        <span>{{ listing.category }}</span>
                         {% if listing.county %}
                             <span class="text-slate-400">·</span>
                             <span>{{ listing.county }}</span>

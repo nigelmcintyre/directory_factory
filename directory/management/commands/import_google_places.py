@@ -109,15 +109,13 @@ class Command(BaseCommand):
         
         attributes = {}
 
-        # Venue type
-        if any(term in combined_text for term in ["hotel", "resort", "lodging"]) or "lodging" in types_text:
-            attributes["venue_type"] = "Hotel/Resort"
-        elif "leisure" in combined_text or "leisure centre" in combined_text or "leisure center" in combined_text:
-            attributes["venue_type"] = "Leisure Centre"
-        elif any(term in combined_text for term in ["gym", "fitness", "health club", "healthclub"]) or "gym" in types_text:
-            attributes["venue_type"] = "Gym/Health Club"
-        elif any(term in combined_text for term in ["spa", "wellness"]):
-            attributes["venue_type"] = "Spa/Wellness"
+        # Venue type - Simplified to 3 main categories
+        if any(term in combined_text for term in ["gym", "fitness", "health club", "healthclub", "leisure"]) or \
+           "gym" in types_text or "leisure" in combined_text:
+            attributes["venue_type"] = "Leisure & Fitness"
+        elif any(term in combined_text for term in ["hotel", "resort", "lodging", "spa", "wellness"]) or \
+             "lodging" in types_text or "spa" in types_text:
+            attributes["venue_type"] = "Spa & Wellness"
         else:
             attributes["venue_type"] = "Dedicated Sauna"
         
@@ -263,7 +261,6 @@ class Command(BaseCommand):
                         "name": name,
                         "city": city,
                         "county": county,
-                        "category": "Sauna",
                         "description": description,
                         "address": address,
                         "website": website,

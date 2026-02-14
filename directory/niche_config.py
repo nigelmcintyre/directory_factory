@@ -29,18 +29,6 @@ FILTERS = [
         "field_type": "model",
     },
     {
-        "key": "venue_type",
-        "label": "Venue Type",
-        "type": "choice",
-        "choices": [
-            "Dedicated Sauna",
-            "Spa/Wellness",
-            "Hotel/Resort",
-            "Leisure Centre",
-            "Gym/Health Club",
-        ],
-    },
-    {
         "key": "heat_source",
         "label": "Heat Source",
         "type": "choice",

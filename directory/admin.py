@@ -4,6 +4,6 @@ from .models import Listing
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ("name", "city", "category", "is_active", "created_at")
-    search_fields = ("name", "city", "category")
-    list_filter = ("is_active", "city", "category")
+    list_display = ("name", "city", "county", "is_active", "created_at")
+    search_fields = ("name", "city", "county")
+    list_filter = ("is_active", "city", "county")
