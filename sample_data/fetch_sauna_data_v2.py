@@ -152,7 +152,17 @@ def extract_attributes(name, summary, reviews):
     
     attributes['cold_plunge'] = any(word in full_text for word in ["cold plunge", "ice bath", "cold water"])
     attributes['outdoor'] = any(word in full_text for word in ["outdoor", "outside", "garden"])
-    attributes['private_rooms'] = any(word in full_text for word in ["private", "individual room", "exclusive"])
+    attributes['dog_friendly'] = any(word in full_text for word in ["dog friendly", "dogs welcome", "pet friendly", "pets allowed"])
+    attributes['showers'] = any(word in full_text for word in ["shower", "showers"])
+    attributes['sea_view'] = any(word in full_text for word in ["sea view", "ocean view", "coastal", "seaside", "waterfront"])
+    
+    # Changing facilities: "yes", "no", or "not listed"
+    if any(word in full_text for word in ["changing room", "changing facilities", "locker room", "lockers"]):
+        attributes['changing_facilities'] = "yes"
+    elif any(word in full_text for word in ["no changing", "no facilities"]):
+        attributes['changing_facilities'] = "no"
+    else:
+        attributes['changing_facilities'] = "not listed"
     
     return attributes
 
@@ -168,7 +178,7 @@ def is_valid_sauna(data, place_types):
     # STRICT EXCLUSIONS
     strict_exclude = [
         "builder", "construction", "supplier", "manufacturer", "manufacturing",
-        "sales", "sell", "buy", "shop", "store", "hut", "huts",
+        "sales", "sell", "buy", "sauna shop", "sauna store",
         "aesthetic", "aesthetics", "beauty bar", "beauty salon",
         "nails", "lashes", "botox", "filler", "laser", "waxing",
         "massage therapist", "chiropractor", "physiotherap",
@@ -179,15 +189,19 @@ def is_valid_sauna(data, place_types):
     if any(keyword in combined for keyword in strict_exclude):
         return False
     
-    # Exclude beauty/spa places without sauna in name
-    beauty_types = ["beauty_salon", "hair_care", "spa"]
+    # Exclude beauty/hair places without sauna in name
+    beauty_types = ["beauty_salon", "hair_care"]
     if any(t in types_str for t in beauty_types):
         if "sauna" not in name and "sauna" not in summary:
             return False
     
     # Must have sauna as core business
-    sauna_keywords = ["sauna", "barrel sauna", "mobile sauna", "sea swimming", "cold plunge"]
+    sauna_keywords = ["sauna", "saunas", "saunos", "sweathouse", "sweat house", "barrel sauna", "mobile sauna", "sea swimming", "cold plunge"]
     has_sauna = any(keyword in name or keyword in summary for keyword in sauna_keywords)
+    
+    # Also accept if it has sauna-like business types (many saunas are tagged as "spa")
+    sauna_types = ["sauna"]
+    has_sauna_type = any(t in types_str for t in sauna_types)
     
     # Exclude restaurants unless "sauna" in name
     general_exclude = ["restaurant", "grocery", "repair"]
@@ -196,7 +210,7 @@ def is_valid_sauna(data, place_types):
     if "cafe" in name and "sauna" in name:
         is_excluded = False
     
-    return has_sauna and not is_excluded
+    return (has_sauna or has_sauna_type) and not is_excluded
 
 
 def fetch_places_enhanced(queries):
@@ -287,7 +301,10 @@ def fetch_places_enhanced(queries):
                         'heat_source': attributes['heat_source'],
                         'cold_plunge': attributes['cold_plunge'],
                         'outdoor': attributes['outdoor'],
-                        'private_rooms': attributes['private_rooms'],
+                        'dog_friendly': attributes['dog_friendly'],
+                        'showers': attributes['showers'],
+                        'changing_facilities': attributes['changing_facilities'],
+                        'sea_view': attributes['sea_view'],
                         'business_status': business_status,
                         'types': ", ".join(place_types),
                         'summary': summary,
@@ -354,7 +371,8 @@ def main():
     df_import = df[[
         'name', 'place_id', 'city', 'county', 'address',
         'website', 'phone', 'rating', 'reviews_count', 'photo_ref',
-        'heat_source', 'cold_plunge', 'outdoor', 'private_rooms'
+        'heat_source', 'cold_plunge', 'outdoor',
+        'dog_friendly', 'showers', 'changing_facilities', 'sea_view'
     ]].copy()
     csv_import = output_dir / f"sauna_import_ready_v2_{timestamp}.csv"
     df_import.to_csv(csv_import, index=False)
@@ -364,7 +382,6 @@ def main():
     print(f"\n🎉 SUCCESS!")
     print(f"   Total listings: {len(df)}")
     print(f"   Counties covered: {df['county'].nunique()}")
-    print(f"   Categories: {dict(df['category'].value_counts())}")
     
     # Data quality stats
     missing_phone = df[df['phone'].isna() | (df['phone'] == '')].shape[0]

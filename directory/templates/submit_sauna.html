@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Submit a Sauna</h1>
+        <p class="text-lg text-gray-600">
+            Know a sauna that's not on our list? Help us build Ireland's most comprehensive sauna directory! 
+            Fill in as much information as you can, and we'll review your submission.
+        </p>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-md p-6 md:p-8">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+            
+            <!-- Basic Information Section -->
+            <div class="border-b border-gray-200 pb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.name.label }}
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.city.label }}
+                        </label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.city.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.county.label }}
+                        </label>
+                        {{ form.county }}
+                        {% if form.county.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.county.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.address.label }}
+                        </label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.address.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.address.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.address.help_text }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.website.label }}
+                        </label>
+                        {{ form.website }}
+                        {% if form.website.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.website.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.phone.label }}
+                        </label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.phone.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.description.label }}
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.description.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.description.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Amenities Section -->
+            <div class="border-b border-gray-200 pb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Amenities & Features</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.heat_source.label }}
+                        </label>
+                        {{ form.heat_source }}
+                        {% if form.heat_source.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.heat_source.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.cold_plunge.label }}
+                        </label>
+                        {{ form.cold_plunge }}
+                        {% if form.cold_plunge.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.cold_plunge.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.showers.label }}
+                        </label>
+                        {{ form.showers }}
+                        {% if form.showers.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.showers.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.changing_facilities.label }}
+                        </label>
+                        {{ form.changing_facilities }}
+                        {% if form.changing_facilities.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.changing_facilities.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.sea_view.label }}
+                        </label>
+                        {{ form.sea_view }}
+                        {% if form.sea_view.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.sea_view.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.dog_friendly.label }}
+                        </label>
+                        {{ form.dog_friendly }}
+                        {% if form.dog_friendly.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.dog_friendly.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.opening_hours.label }}
+                        </label>
+                        {{ form.opening_hours }}
+                        {% if form.opening_hours.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.opening_hours.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.opening_hours.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.opening_hours.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Your Information Section -->
+            <div class="pb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Your Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.submitter_name.label }}
+                        </label>
+                        {{ form.submitter_name }}
+                        {% if form.submitter_name.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.submitter_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ form.submitter_email.label }}
+                        </label>
+                        {{ form.submitter_email }}
+                        {% if form.submitter_email.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.submitter_email.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.submitter_email.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.submitter_email.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="flex items-center justify-between pt-6">
+                <a href="{% url 'home' %}" class="text-blue-600 hover:text-blue-800">
+                    ← Back to Directory
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                    Submit Sauna
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Help Text -->
+    <div class="mt-6 text-sm text-gray-600 text-center">
+        <p>All submissions are reviewed before being added to the directory.</p>
+        <p>We typically review submissions within 1-2 business days.</p>
+    </div>
+</div>
+{% endblock %}

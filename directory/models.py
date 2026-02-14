@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.text import slugify
 
 
 class Listing(models.Model):
@@ -27,3 +28,43 @@ class Listing(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class SaunaSubmission(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    # Basic information
+    name = models.CharField(max_length=255)
+    city = models.CharField(max_length=120)
+    county = models.CharField(max_length=120)
+    address = models.CharField(max_length=500, blank=True)
+    website = models.URLField(max_length=500, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    description = models.TextField(blank=True, help_text="Tell us about this sauna")
+    
+    # Attributes
+    heat_source = models.CharField(max_length=50, blank=True)
+    cold_plunge = models.CharField(max_length=20, blank=True)
+    dog_friendly = models.CharField(max_length=20, blank=True)
+    showers = models.CharField(max_length=20, blank=True)
+    changing_facilities = models.CharField(max_length=20, blank=True)
+    sea_view = models.CharField(max_length=20, blank=True)
+    opening_hours = models.TextField(blank=True, help_text="Optional: Opening hours information")
+    
+    # Submission tracking
+    submitter_name = models.CharField(max_length=255, blank=True)
+    submitter_email = models.EmailField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+    def __str__(self) -> str:
+        return f"{self.name} - {self.status}"

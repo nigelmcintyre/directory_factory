@@ -1,9 +1,11 @@
 import json
 from django.conf import settings
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpRequest, HttpResponse
 from django.utils.safestring import mark_safe
+from django.contrib import messages
 from .models import Listing
+from .forms import SaunaSubmissionForm
 from .niche_config import SITE_NAME, DOMAIN, FILTERS
 from .utils import get_filtered_listings
 from .schema import generate_breadcrumb_schema, generate_listing_schema
@@ -153,3 +155,46 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
     }
 
     return render(request, "listing_detail.html", context)
+
+
+def submit_sauna(request: HttpRequest) -> HttpResponse:
+    """Handle sauna submission form"""
+    if request.method == 'POST':
+        form = SaunaSubmissionForm(request.POST)
+        if form.is_valid():
+            submission = form.save()
+            messages.success(
+                request,
+                "Thank you! Your sauna submission has been received and will be reviewed shortly."
+            )
+            return redirect('submit_success')
+    else:
+        form = SaunaSubmissionForm()
+    
+    page_title = f"Submit a Sauna | {SITE_NAME}"
+    meta_description = "Know a sauna that's not listed? Help us grow Ireland's most comprehensive sauna directory by submitting details."
+    
+    context = {
+        "site_name": SITE_NAME,
+        "domain": DOMAIN,
+        "form": form,
+        "page_title": page_title,
+        "meta_description": meta_description,
+    }
+    
+    return render(request, "submit_sauna.html", context)
+
+
+def submit_success(request: HttpRequest) -> HttpResponse:
+    """Thank you page after successful submission"""
+    page_title = f"Submission Received | {SITE_NAME}"
+    meta_description = "Thank you for your sauna submission!"
+    
+    context = {
+        "site_name": SITE_NAME,
+        "domain": DOMAIN,
+        "page_title": page_title,
+        "meta_description": meta_description,
+    }
+    
+    return render(request, "submit_success.html", context)
