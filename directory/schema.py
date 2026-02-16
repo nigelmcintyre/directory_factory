@@ -18,6 +18,15 @@ def generate_listing_schema(listing):
             "addressLocality": listing.city,
             "addressCountry": "IE",
         }
+    
+    # Add rating with required reviewCount
+    if listing.rating:
+        schema["aggregateRating"] = {
+            "@type": "AggregateRating",
+            "ratingValue": str(listing.rating),
+            "bestRating": "5",
+            "reviewCount": str(listing.reviews_count or 1)
+        }
 
     return schema
 

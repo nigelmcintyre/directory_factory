@@ -45,8 +45,8 @@
   {% if listing.rating %}"aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "{{ listing.rating }}",
-    "bestRating": "5"{% if listing.reviews_count %},
-    "reviewCount": "{{ listing.reviews_count }}"{% endif %}
+    "bestRating": "5",
+    "reviewCount": "{{ listing.reviews_count|default:1 }}"
   },{% endif %}
   {% if listing.photo_ref and google_maps_api_key %}"image": "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1200&photoreference={{ listing.photo_ref }}&key={{ google_maps_api_key }}",{% endif %}
   "priceRange": "$$"
