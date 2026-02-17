@@ -92,4 +92,11 @@ if not DEBUG:
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "AIzaSyBKh443xE18fK4YxabH-OhRgWpAxAthIvM")
 
+MAP_PROVIDER = os.getenv("MAP_PROVIDER", "leaflet")
+MAP_TILES_URL = os.getenv("MAP_TILES_URL", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+MAP_TILES_ATTRIBUTION = os.getenv("MAP_TILES_ATTRIBUTION", "&copy; OpenStreetMap contributors")
+MAP_DEFAULT_CENTER_LAT = float(os.getenv("MAP_DEFAULT_CENTER_LAT", "53.1424"))
+MAP_DEFAULT_CENTER_LNG = float(os.getenv("MAP_DEFAULT_CENTER_LNG", "-7.6921"))
+MAP_DEFAULT_ZOOM = int(os.getenv("MAP_DEFAULT_ZOOM", "7"))
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

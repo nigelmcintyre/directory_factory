@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, Tuple, Dict, Any, List, Union
+from math import radians, cos, sin, asin, sqrt
 from django.db.models import Q, QuerySet
 from .models import Listing
 from .niche_config import FILTERS
@@ -15,7 +16,29 @@ def _normalize_bool(value: Optional[str]) -> Optional[bool]:
     return None
 
 
-def get_filtered_listings(request) -> QuerySet[Listing]:
+def _parse_float(value: Optional[str]) -> Optional[float]:
+    if value is None:
+        return None
+    value = str(value).strip()
+    if not value or value.lower() in {"nan", "none"}:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    # Haversine formula to compute great-circle distance in km.
+    radius_km = 6371.0
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    return radius_km * c
+
+
+def get_filtered_listings(request) -> Tuple[Union[QuerySet[Listing], List[Listing]], Dict[str, Any]]:
     queryset = Listing.objects.filter(is_active=True)
 
     for definition in FILTERS:
@@ -79,4 +102,32 @@ def get_filtered_listings(request) -> QuerySet[Listing]:
                 query |= Q(**{f"attributes__{key}__iexact": value})
             queryset = queryset.filter(query)
 
-    return queryset
+    near_me = _normalize_bool(request.GET.get("near_me")) is True
+    user_lat = _parse_float(request.GET.get("lat"))
+    user_lng = _parse_float(request.GET.get("lng"))
+    distance_km = _parse_float(request.GET.get("distance_km")) or 50.0
+
+    if near_me and user_lat is not None and user_lng is not None:
+        candidates = queryset.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
+        results: List[Listing] = []
+        for listing in candidates:
+            if listing.latitude is None or listing.longitude is None:
+                continue
+            distance = _haversine_km(user_lat, user_lng, listing.latitude, listing.longitude)
+            if distance <= distance_km:
+                listing.distance_km = round(distance, 1)
+                results.append(listing)
+        results.sort(key=lambda item: getattr(item, "distance_km", 0))
+        return results, {
+            "near_me": True,
+            "user_lat": user_lat,
+            "user_lng": user_lng,
+            "distance_km": distance_km,
+        }
+
+    return queryset, {
+        "near_me": False,
+        "user_lat": user_lat,
+        "user_lng": user_lng,
+        "distance_km": distance_km,
+    }

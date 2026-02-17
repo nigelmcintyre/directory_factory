@@ -17,6 +17,9 @@
             </h3>
             <div class="flex items-center gap-2 mt-2">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">{{ listing.city }}</span>
+                {% if listing.distance_km != None %}
+                    <span class="text-xs font-semibold text-slate-600">· {{ listing.distance_km }} km away</span>
+                {% endif %}
                 {% if listing.rating %}
                     <span class="text-sm text-slate-500">·</span>
                     <div class="flex items-center gap-1">

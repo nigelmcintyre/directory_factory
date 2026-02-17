@@ -25,7 +25,8 @@ def robots_txt(request: HttpRequest) -> HttpResponse:
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    listings = get_filtered_listings(request)
+    listings, near_me_context = get_filtered_listings(request)
+    listings_count = len(listings) if isinstance(listings, list) else listings.count()
     
     # Check if filters are applied for dynamic meta
     city = request.GET.get('city', '')
@@ -34,19 +35,56 @@ def home(request: HttpRequest) -> HttpResponse:
     if city or county:
         location = city or county
         page_title = f"Saunas in {location.title()} | {SITE_NAME}"
-        meta_description = f"Find the best saunas in {location.title()}, Ireland. Browse {listings.count()} listings with ratings, reviews, amenities, and contact details."
+        meta_description = f"Find the best saunas in {location.title()}, Ireland. Browse {listings_count} listings with ratings, reviews, amenities, and contact details."
     else:
         page_title = f"{SITE_NAME} - Find the Best Saunas in Ireland"
-        meta_description = f"Discover {listings.count()}+ saunas across Ireland. Filter by county, rating, and amenities to find your perfect sauna experience. Verified listings with photos, reviews, and contact info."
+        meta_description = f"Discover {listings_count}+ saunas across Ireland. Filter by county, rating, and amenities to find your perfect sauna experience. Verified listings with photos, reviews, and contact info."
+
+    map_listings = []
+    for listing in listings:
+        if listing.latitude is None or listing.longitude is None:
+            continue
+        map_listings.append(
+            {
+                "name": listing.name,
+                "lat": listing.latitude,
+                "lng": listing.longitude,
+                "city": listing.city,
+                "address": listing.address,
+                "url": f"/listing/{listing.slug}/",
+                "distance_km": getattr(listing, "distance_km", None),
+            }
+        )
     
     context = {
         "site_name": SITE_NAME,
         "domain": DOMAIN,
         "filters": FILTERS,
         "listings": listings,
+        "listings_count": listings_count,
         "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
+        "map_provider": getattr(settings, "MAP_PROVIDER", "leaflet"),
+        "map_tiles_url": getattr(
+            settings,
+            "MAP_TILES_URL",
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        ),
+        "map_tiles_attribution": getattr(
+            settings,
+            "MAP_TILES_ATTRIBUTION",
+            "&copy; OpenStreetMap contributors",
+        ),
+        "map_center_lat": getattr(settings, "MAP_DEFAULT_CENTER_LAT", 53.1424),
+        "map_center_lng": getattr(settings, "MAP_DEFAULT_CENTER_LNG", -7.6921),
+        "map_default_zoom": getattr(settings, "MAP_DEFAULT_ZOOM", 7),
+        "map_listings_json": mark_safe(json.dumps(map_listings)),
+        "map_enabled": True,
         "page_title": page_title,
         "meta_description": meta_description,
+        "near_me_active": near_me_context.get("near_me"),
+        "near_me_distance_km": near_me_context.get("distance_km", 50),
+        "user_lat": near_me_context.get("user_lat"),
+        "user_lng": near_me_context.get("user_lng"),
     }
 
     if _is_htmx(request):
@@ -56,13 +94,19 @@ def home(request: HttpRequest) -> HttpResponse:
 
 
 def pseo_landing(request: HttpRequest, city: str) -> HttpResponse:
-    listings = get_filtered_listings(request).filter(
+    listings, near_me_context = get_filtered_listings(request)
+    if isinstance(listings, list):
+        listings = [listing for listing in listings if listing.city.lower() == city.lower()]
+        listings_count = len(listings)
+    else:
+        listings = listings.filter(
         city__iexact=city,
-    )
+        )
+        listings_count = listings.count()
 
     page_title = f"Saunas in {city.title()} | {SITE_NAME}"
     meta_description = (
-        f"Sauna Guide lists {listings.count()} sauna options in {city.title()}. "
+        f"Sauna Guide lists {listings_count} sauna options in {city.title()}. "
         "Compare amenities, ratings, and locations to find the best fit."
     )
     
@@ -75,12 +119,14 @@ def pseo_landing(request: HttpRequest, city: str) -> HttpResponse:
         "domain": DOMAIN,
         "filters": FILTERS,
         "listings": listings,
+        "listings_count": listings_count,
         "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
         "page_title": page_title,
         "meta_description": meta_description,
         "city": city,
         "schema_breadcrumb": mark_safe(json.dumps(breadcrumb_schema)),
         "schema_listings": mark_safe(json.dumps(listing_schemas)),
+        "map_enabled": False,
     }
 
     if _is_htmx(request):

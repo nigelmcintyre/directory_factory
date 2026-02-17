@@ -19,6 +19,17 @@ class Command(BaseCommand):
         csv_file = options["csv_file"]
         clear = options.get("clear", False)
 
+        def parse_float(value):
+            if value is None:
+                return None
+            value = str(value).strip()
+            if not value or value.lower() in {"nan", "none"}:
+                return None
+            try:
+                return float(value)
+            except ValueError:
+                return None
+
         if clear:
             count = Listing.objects.count()
             Listing.objects.all().delete()
@@ -46,6 +57,8 @@ class Command(BaseCommand):
                 website = (row.get("website") or "").strip()
                 phone = (row.get("phone") or "").strip()
                 photo_ref = (row.get("photo_ref") or "").strip()
+                latitude = parse_float(row.get("lat"))
+                longitude = parse_float(row.get("lng"))
                 
                 # Handle rating (convert to decimal or None)
                 rating_str = (row.get("rating") or "").strip()
@@ -145,6 +158,8 @@ class Command(BaseCommand):
                             "website": website,
                             "phone": phone,
                             "photo_ref": photo_ref,
+                            "latitude": latitude,
+                            "longitude": longitude,
                             "rating": rating,
                             "reviews_count": reviews_count,
                             "attributes": attributes,
@@ -162,6 +177,8 @@ class Command(BaseCommand):
                             "website": website,
                             "phone": phone,
                             "photo_ref": photo_ref,
+                            "latitude": latitude,
+                            "longitude": longitude,
                             "rating": rating,
                             "reviews_count": reviews_count,
                             "attributes": attributes,
