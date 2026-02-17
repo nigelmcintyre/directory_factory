@@ -4,9 +4,20 @@ from .models import Listing, SaunaSubmission
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ("name", "city", "county", "is_active", "created_at")
+    list_display = ("name", "city", "county", "is_featured", "is_active", "created_at")
     search_fields = ("name", "city", "county")
-    list_filter = ("is_active", "city", "county")
+    list_filter = ("is_featured", "is_active", "city", "county")
+    actions = ["mark_as_featured", "mark_as_not_featured"]
+    
+    def mark_as_featured(self, request, queryset):
+        updated = queryset.update(is_featured=True)
+        self.message_user(request, f"{updated} listing(s) marked as featured.")
+    mark_as_featured.short_description = "Mark selected as featured"
+    
+    def mark_as_not_featured(self, request, queryset):
+        updated = queryset.update(is_featured=False)
+        self.message_user(request, f"{updated} listing(s) marked as not featured.")
+    mark_as_not_featured.short_description = "Remove featured status"
 
 
 @admin.register(SaunaSubmission)

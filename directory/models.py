@@ -20,12 +20,14 @@ class Listing(models.Model):
     attributes = models.JSONField(default=dict, blank=True)
     structured_data = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
-            models.Index(fields=["city"]),
+            models.Index(fields=["county"]),
+            models.Index(fields=["-is_featured", "name"]),
         ]
 
     def __str__(self) -> str:

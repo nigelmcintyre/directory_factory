@@ -8,8 +8,6 @@
     <link rel="canonical" href="https://{{ domain }}{{ request.path }}" />
     
     <!-- Preconnect to external resources for faster loading -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
-    <link rel="preconnect" href="https://unpkg.com" />
     <link rel="preconnect" href="https://maps.googleapis.com" />
     <link rel="dns-prefetch" href="https://maps.gstatic.com" />
     
@@ -30,20 +28,11 @@
     <meta name="twitter:title" content="{{ page_title }}" />
     <meta name="twitter:description" content="{{ meta_description|default:'Find the best saunas in Ireland with Sauna Guide.' }}" />
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
-    <script defer>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#0ea5e9',
-                        secondary: '#06b6d4',
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}" />
+    
+    <!-- Local JavaScript -->
+    <script src="{% static 'js/htmx.min.js' %}" defer></script>
     {% block schema %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
@@ -68,10 +57,90 @@
         {% block content %}{% endblock %}
     </main>
     
-    <footer class="mt-auto py-8 px-4 bg-white border-t border-slate-200">
-        <div class="mx-auto max-w-7xl text-center text-sm text-slate-600">
-            <p>&copy; 2026 {{ site_name }}. All rights reserved.</p>
+    <footer class="mt-auto py-12 px-4 bg-white border-t border-slate-200">
+        <div class="mx-auto max-w-7xl">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">{{ site_name }}</h3>
+                    <p class="text-sm text-slate-600">Ireland's comprehensive directory of saunas, wellness centers, and spa experiences.</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Popular Counties</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="/?county=Dublin&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Dublin</a>
+                        <a href="/?county=Cork&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Cork</a>
+                        <a href="/?county=Galway&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Galway</a>
+                        <a href="/?county=Kerry&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Kerry</a>
+                        <a href="/?county=Donegal&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Donegal</a>
+                        <a href="/?county=Wicklow&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Wicklow</a>
+                        <a href="/?county=Mayo&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Mayo</a>
+                        <a href="/?county=Clare&footer_keys=county" class="text-sm text-slate-600 hover:text-primary transition-colors">Clare</a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Popular Searches</h3>
+                    <div class="flex flex-col gap-2">
+                        <a href="/?sea_view=yes&footer_keys=sea_view" class="text-sm text-slate-600 hover:text-primary transition-colors">Saunas with Sea Views</a>
+                        <a href="/?cold_plunge=yes&footer_keys=cold_plunge" class="text-sm text-slate-600 hover:text-primary transition-colors">Saunas with Cold Plunge</a>
+                        <a href="/?dog_friendly=yes&footer_keys=dog_friendly" class="text-sm text-slate-600 hover:text-primary transition-colors">Dog-Friendly Saunas</a>
+                        <a href="/?heat_source=wood&footer_keys=heat_source" class="text-sm text-slate-600 hover:text-primary transition-colors">Wood-Fired Saunas</a>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-slate-200 text-center text-sm text-slate-600">
+                <p>&copy; 2026 {{ site_name }}. All rights reserved.</p>
+                <p class="mt-2 text-xs">Designed, built and maintained by <a href="https://simplesitesolutions.ie" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Simple Site Solutions</a></p>
+            </div>
         </div>
     </footer>
+    <script>
+        (function () {
+            var getFooterKeys = function () {
+                var params = new URLSearchParams(window.location.search);
+                var raw = params.get("footer_keys");
+                if (!raw) {
+                    return [];
+                }
+                return raw.split(",").map(function (key) {
+                    return key.trim();
+                }).filter(Boolean);
+            };
+
+            document.body.addEventListener("htmx:configRequest", function (event) {
+                var footerKeys = getFooterKeys();
+                if (!footerKeys.length) {
+                    return;
+                }
+
+                var trigger = event.detail.elt;
+                var triggerName = trigger && trigger.getAttribute ? trigger.getAttribute("name") : null;
+                var params = event.detail.parameters || {};
+                var form = trigger && trigger.closest ? trigger.closest("form") : null;
+
+                footerKeys.forEach(function (key) {
+                    if (key === triggerName) {
+                        return;
+                    }
+                    if (params[key] !== undefined) {
+                        delete params[key];
+                    }
+                    if (form) {
+                        var fields = form.querySelectorAll("[name='" + key + "']");
+                        fields.forEach(function (field) {
+                            if (field.type === "checkbox" || field.type === "radio") {
+                                field.checked = false;
+                            } else {
+                                field.value = "";
+                            }
+                        });
+                    }
+                });
+
+                if (params.footer_keys !== undefined) {
+                    delete params.footer_keys;
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

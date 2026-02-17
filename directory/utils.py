@@ -102,6 +102,9 @@ def get_filtered_listings(request) -> Tuple[Union[QuerySet[Listing], List[Listin
                 query |= Q(**{f"attributes__{key}__iexact": value})
             queryset = queryset.filter(query)
 
+    # Order by featured status first, then by name
+    queryset = queryset.order_by('-is_featured', 'name')
+
     near_me = _normalize_bool(request.GET.get("near_me")) is True
     user_lat = _parse_float(request.GET.get("lat"))
     user_lng = _parse_float(request.GET.get("lng"))
@@ -117,7 +120,8 @@ def get_filtered_listings(request) -> Tuple[Union[QuerySet[Listing], List[Listin
             if distance <= distance_km:
                 listing.distance_km = round(distance, 1)
                 results.append(listing)
-        results.sort(key=lambda item: getattr(item, "distance_km", 0))
+        # Sort by featured first, then by distance
+        results.sort(key=lambda item: (not item.is_featured, getattr(item, "distance_km", 0)))
         return results, {
             "near_me": True,
             "user_lat": user_lat,

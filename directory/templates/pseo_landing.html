@@ -8,12 +8,45 @@
 <script type="application/ld+json">
 {{ schema_listings }}
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+    "name": "Saunas in {{ county|title }}",
+  "numberOfItems": {{ listings_count }},
+  "itemListElement": [
+    {% for listing in listings|slice:":10" %}
+    {
+      "@type": "ListItem",
+      "position": {{ forloop.counter }},
+      "url": "https://{{ domain }}/listing/{{ listing.slug }}/",
+            "name": "{{ listing.name|escapejs }}",
+      "item": {
+        "@type": "LocalBusiness",
+                "name": "{{ listing.name|escapejs }}",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "{{ listing.city|escapejs }}",
+                    "addressRegion": "{{ listing.county|escapejs }}",
+                    "addressCountry": "IE"
+                }{% if listing.rating %},
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "{{ listing.rating }}",
+          "bestRating": "5"
+        }{% endif %}
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
 {% endblock %}
 
 {% block content %}
 <div class="mb-8">
     <div class="rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 p-8 border border-primary/20">
-        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Saunas in {{ city|title }}</h2>
+        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Saunas in {{ county|title }}</h2>
         <p class="text-lg text-slate-600">Explore {{ listings|length }} verified listings tailored to this location</p>
     </div>
 </div>

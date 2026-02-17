@@ -1,10 +1,11 @@
 from django.core.management.base import BaseCommand
 from django.db.models import Count
+from django.utils.text import slugify
 from directory.models import Listing
 
 
 class Command(BaseCommand):
-    help = "Analyze listings and show which city pages can be generated"
+    help = "Analyze listings and show which county pages can be generated"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -17,13 +18,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         min_listings = options["min_listings"]
 
-        # Get all active listings grouped by city
+        # Get all active listings grouped by county
         pages = (
             Listing.objects.filter(is_active=True)
-            .values("city")
+            .exclude(county="")
+            .values("county")
             .annotate(count=Count("id"))
             .filter(count__gte=min_listings)
-            .order_by("-count", "city")
+            .order_by("-count", "county")
         )
 
         if not pages:
@@ -42,11 +44,11 @@ class Command(BaseCommand):
 
         total_listings = 0
         for page in pages:
-            city = page["city"]
+            county = page["county"]
             count = page["count"]
             total_listings += count
 
-            url = f"/{city.lower()}/"
+            url = f"/{slugify(county)}/"
             self.stdout.write(
                 f"  {self.style.HTTP_INFO(url)} - {count} listing{'s' if count != 1 else ''}"
             )
@@ -58,6 +60,6 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             self.style.SUCCESS(
-                f"✓ These URLs are automatically routed by /<city>/"
+                f"✓ These URLs are automatically routed by /<county>/"
             )
         )

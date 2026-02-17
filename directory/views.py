@@ -1,4 +1,6 @@
 import json
+from urllib.parse import urlencode
+from django.utils.text import slugify
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpRequest, HttpResponse
@@ -28,12 +30,12 @@ def home(request: HttpRequest) -> HttpResponse:
     listings, near_me_context = get_filtered_listings(request)
     listings_count = len(listings) if isinstance(listings, list) else listings.count()
     
-    # Check if filters are applied for dynamic meta
-    city = request.GET.get('city', '')
+    # Check if filters are applied for dynamic meta (prefer county)
     county = request.GET.get('county', '')
+    city = request.GET.get('city', '')
     
-    if city or county:
-        location = city or county
+    if county or city:
+        location = county or city
         page_title = f"Saunas in {location.title()} | {SITE_NAME}"
         meta_description = f"Find the best saunas in {location.title()}, Ireland. Browse {listings_count} listings with ratings, reviews, amenities, and contact details."
     else:
@@ -49,7 +51,7 @@ def home(request: HttpRequest) -> HttpResponse:
                 "name": listing.name,
                 "lat": listing.latitude,
                 "lng": listing.longitude,
-                "city": listing.city,
+                "location": listing.county or listing.city,
                 "address": listing.address,
                 "url": f"/listing/{listing.slug}/",
                 "distance_km": getattr(listing, "distance_km", None),
@@ -93,25 +95,48 @@ def home(request: HttpRequest) -> HttpResponse:
     return render(request, "home.html", context)
 
 
-def pseo_landing(request: HttpRequest, city: str) -> HttpResponse:
+def pseo_landing(request: HttpRequest, county: str) -> HttpResponse:
+    county_slug = county
+    county_display = county.replace("-", " ").title()
+    selected_county = request.GET.get("county", "").strip()
+    if selected_county and slugify(selected_county) != county_slug:
+        redirect_params = request.GET.copy()
+        redirect_params.pop("county", None)
+        query_pairs = [(key, value) for key, values in redirect_params.lists() for value in values if value]
+        query_string = urlencode(query_pairs, doseq=True)
+        path = f"/{slugify(selected_county)}/"
+        if query_string:
+            path = f"{path}?{query_string}"
+        return redirect(path)
+
+    query_params = request.GET.copy()
+    query_params["county"] = county_display
+    request.GET = query_params
     listings, near_me_context = get_filtered_listings(request)
     if isinstance(listings, list):
-        listings = [listing for listing in listings if listing.city.lower() == city.lower()]
+        listings = [
+            listing
+            for listing in listings
+            if listing.county and slugify(listing.county) == county_slug
+        ]
         listings_count = len(listings)
     else:
-        listings = listings.filter(
-        city__iexact=city,
-        )
+        listings = (
+            listings.filter(county__iexact=county_display)
+            | listings.filter(county__in=[county.replace("-", " ")])
+        ).distinct().order_by("-is_featured", "name")
+        if listings.exists():
+            county_display = listings.first().county or county_display
         listings_count = listings.count()
 
-    page_title = f"Saunas in {city.title()} | {SITE_NAME}"
+    page_title = f"Saunas in {county_display} | {SITE_NAME}"
     meta_description = (
-        f"Sauna Guide lists {listings_count} sauna options in {city.title()}. "
+        f"Sauna Guide lists {listings_count} sauna options in {county_display}. "
         "Compare amenities, ratings, and locations to find the best fit."
     )
     
     # Generate Schema.org structured data
-    breadcrumb_schema = generate_breadcrumb_schema(city, SITE_NAME)
+    breadcrumb_schema = generate_breadcrumb_schema(county_display, SITE_NAME, county_slug)
     listing_schemas = [generate_listing_schema(listing) for listing in listings[:5]]  # Top 5 listings
     
     context = {
@@ -123,7 +148,8 @@ def pseo_landing(request: HttpRequest, city: str) -> HttpResponse:
         "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
         "page_title": page_title,
         "meta_description": meta_description,
-        "city": city,
+        "county": county_display,
+        "county_slug": county_slug,
         "schema_breadcrumb": mark_safe(json.dumps(breadcrumb_schema)),
         "schema_listings": mark_safe(json.dumps(listing_schemas)),
         "map_enabled": False,
@@ -137,31 +163,39 @@ def pseo_landing(request: HttpRequest, city: str) -> HttpResponse:
 
 def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
     listing = get_object_or_404(Listing, slug=slug, is_active=True)
+    county_slug = slugify(listing.county) if listing.county else ""
     
-    # Get related listings (same city or county, excluding current)
-    related_listings = (
-        Listing.objects
-        .filter(is_active=True)
-        .exclude(id=listing.id)
-        .filter(city=listing.city)[:4]
-    )
-    
-    # If not enough in same city, try county
-    if related_listings.count() < 4 and listing.county:
-        additional = (
+    # Get related listings (prefer same county, fallback to city)
+    if listing.county:
+        related_queryset = (
             Listing.objects
             .filter(is_active=True, county=listing.county)
             .exclude(id=listing.id)
-            .exclude(id__in=[l.id for l in related_listings])[:4 - related_listings.count()]
         )
-        related_listings = list(related_listings) + list(additional)
+    else:
+        related_queryset = (
+            Listing.objects
+            .filter(is_active=True, city=listing.city)
+            .exclude(id=listing.id)
+        )
+    related_listings = list(related_queryset[:4])
+
+    # If not enough in county, try city as a fallback
+    if len(related_listings) < 4 and listing.city:
+        additional = (
+            Listing.objects
+            .filter(is_active=True, city=listing.city)
+            .exclude(id=listing.id)
+            .exclude(id__in=[l.id for l in related_listings])[:4 - len(related_listings)]
+        )
+        related_listings = related_listings + list(additional)
     
     # Enhanced SEO title with location and rating
     title_parts = [listing.name]
-    if listing.city:
-        title_parts.append(f"in {listing.city}")
     if listing.county:
-        title_parts.append(listing.county)
+        title_parts.append(f"in {listing.county}")
+    if listing.city:
+        title_parts.append(listing.city)
     if listing.rating:
         title_parts.append(f"★{listing.rating}")
     page_title = " ".join(title_parts) + f" | {SITE_NAME}"
@@ -171,7 +205,9 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
         meta_description = listing.description[:155] + "..." if len(listing.description) > 155 else listing.description
     else:
         desc_parts = [f"Visit {listing.name}"]
-        if listing.city:
+        if listing.county:
+            desc_parts.append(f"in {listing.county}")
+        elif listing.city:
             desc_parts.append(f"in {listing.city}")
         if listing.rating:
             desc_parts.append(f"- Rated {listing.rating}★")
@@ -182,11 +218,11 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
     # Generate keywords from listing attributes
     meta_keywords = [
         f"{listing.name}",
-        f"sauna {listing.city}",
-        listing.city,
+        f"sauna {listing.county}" if listing.county else f"sauna {listing.city}",
+        listing.county or listing.city,
     ]
-    if listing.county:
-        meta_keywords.append(f"sauna {listing.county}")
+    if listing.city and listing.county:
+        meta_keywords.append(f"sauna {listing.city}")
     
     context = {
         "site_name": SITE_NAME,
@@ -198,6 +234,7 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
         "page_title": page_title,
         "meta_description": meta_description,
         "meta_keywords": ", ".join(meta_keywords),
+        "county_slug": county_slug,
     }
 
     return render(request, "listing_detail.html", context)

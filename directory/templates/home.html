@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% load dict_extras %}
 
 {% block extra_head %}
@@ -16,23 +17,101 @@
   },
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://saunaguide.ie/?city={search_term_string}",
+                "target": "https://saunaguide.ie/?county={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Saunas in Ireland",
+  "numberOfItems": {{ listings_count }},
+  "itemListElement": [
+    {% for listing in listings|slice:":10" %}
+    {
+      "@type": "ListItem",
+      "position": {{ forloop.counter }},
+      "url": "https://{{ domain }}/listing/{{ listing.slug }}/",
+                "name": "{{ listing.name|escapejs }}",
+      "item": {
+        "@type": "LocalBusiness",
+                    "name": "{{ listing.name|escapejs }}",
+                "address": {
+                    "@type": "PostalAddress",
+                        "addressLocality": "{{ listing.city|escapejs }}",
+                        "addressRegion": "{{ listing.county|escapejs }}",
+                    "addressCountry": "IE"
+                }{% if listing.rating %},
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "{{ listing.rating }}",
+          "bestRating": "5"
+        }{% endif %}
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What types of saunas are available in Ireland?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ireland offers various types of saunas including traditional wood-fired saunas, electric saunas, and infrared saunas. Many facilities also feature outdoor saunas with stunning sea views, cold plunge pools, and wellness amenities."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How often should I use a sauna?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Most health experts recommend 2-3 sauna sessions per week for optimal benefits. Always listen to your body and consult a healthcare provider if you have medical conditions."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What's the difference between traditional and infrared saunas?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Traditional saunas heat the air around you (typically 70-100°C), while infrared saunas use infrared light to heat your body directly at lower temperatures (45-60°C). Both offer unique benefits for relaxation and wellness."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are saunas safe for everyone?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "While saunas are generally safe, pregnant women, people with heart conditions, and those with certain medical conditions should consult their doctor before using a sauna."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I find a dog-friendly sauna in Ireland?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use the 'Dog Friendly' filter on Sauna Guide to find facilities that welcome pets. Many outdoor and mobile saunas in Ireland accommodate dogs."
+      }
+    }
+  ]
+}
+</script>
 {% if map_enabled %}
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <link rel="stylesheet" href="{% static 'css/leaflet/leaflet.css' %}" />
     {% if map_provider == "google" and google_maps_api_key %}
         <script
             src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}"
             defer
         ></script>
     {% else %}
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+        <script src="{% static 'js/leaflet.js' %}" defer></script>
     {% endif %}
 {% endif %}
 {% endblock %}
@@ -177,16 +256,24 @@
                 <h3 class="text-2xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h3>
                 <div class="space-y-4">
                     <div>
+                        <h4 class="font-semibold text-slate-900 mb-2">What types of saunas are available in Ireland?</h4>
+                        <p class="text-slate-700">Ireland offers various types of saunas including traditional wood-fired saunas, electric saunas, and infrared saunas. Many facilities also feature outdoor saunas with stunning sea views, cold plunge pools, and wellness amenities.</p>
+                    </div>
+                    <div>
                         <h4 class="font-semibold text-slate-900 mb-2">How often should I use a sauna?</h4>
                         <p class="text-slate-700">Most health experts recommend 2-3 sauna sessions per week for optimal benefits. Always listen to your body and consult a healthcare provider if you have medical conditions.</p>
                     </div>
                     <div>
                         <h4 class="font-semibold text-slate-900 mb-2">What's the difference between traditional and infrared saunas?</h4>
-                        <p class="text-slate-700">Traditional saunas heat the air around you (typically 70-100°C), while infrared saunas use infrared light to heat your body directly at lower temperatures (45-60°C). Both offer unique benefits.</p>
+                        <p class="text-slate-700">Traditional saunas heat the air around you (typically 70-100°C), while infrared saunas use infrared light to heat your body directly at lower temperatures (45-60°C). Both offer unique benefits for relaxation and wellness.</p>
                     </div>
                     <div>
                         <h4 class="font-semibold text-slate-900 mb-2">Are saunas safe for everyone?</h4>
                         <p class="text-slate-700">While saunas are generally safe, pregnant women, people with heart conditions, and those with certain medical conditions should consult their doctor before using a sauna.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-900 mb-2">How do I find a dog-friendly sauna in Ireland?</h4>
+                        <p class="text-slate-700">Use the 'Dog Friendly' filter on Sauna Guide to find facilities that welcome pets. Many outdoor and mobile saunas in Ireland accommodate dogs.</p>
                     </div>
                 </div>
             </div>
@@ -381,7 +468,8 @@
                 }
                 const marker = window.L.marker([listing.lat, listing.lng]).addTo(mapState.map);
                 const distanceText = listing.distance_km ? ` (${listing.distance_km} km)` : "";
-                marker.bindPopup(`<strong>${listing.name}</strong><br/>${listing.city}${distanceText}<br/><a href="${listing.url}">View</a>`);
+                const location = listing.location || listing.county || listing.city || "";
+                marker.bindPopup(`<strong>${listing.name}</strong><br/>${location}${distanceText}<br/><a href="${listing.url}">View</a>`);
                 mapState.markers.push(marker);
                 bounds.push([listing.lat, listing.lng]);
             });
@@ -464,8 +552,9 @@
                     title: listing.name,
                 });
                 const distanceText = listing.distance_km ? ` (${listing.distance_km} km)` : "";
+                const location = listing.location || listing.county || listing.city || "";
                 const info = new window.google.maps.InfoWindow({
-                    content: `<strong>${listing.name}</strong><br/>${listing.city}${distanceText}<br/><a href="${listing.url}">View</a>`,
+                    content: `<strong>${listing.name}</strong><br/>${location}${distanceText}<br/><a href="${listing.url}">View</a>`,
                 });
                 marker.addListener("click", () => info.open({ anchor: marker, map: mapState.map }));
                 mapState.markers.push(marker);

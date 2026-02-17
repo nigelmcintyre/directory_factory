@@ -6,7 +6,7 @@ Foundational Django 5 codebase for configuration-driven niche directory sites us
 - Universal `Listing` model with `attributes` and `structured_data` JSON fields
 - Configuration-driven filters in `niche_config.py`
 - HTMX-based filtering with server-rendered partials
-- pSEO landing routes at `/<city>/<category>/`
+- pSEO landing routes at `/<county>/`
 
 ## Quick start with Docker (Recommended)
 
@@ -22,6 +22,89 @@ That's it! PostgreSQL and Django are running in containers.
 To stop: `docker-compose down`
 
 To stop and remove data: `docker-compose down -v`
+
+## CSS Development
+
+This project uses Tailwind CSS compiled locally for optimal performance.
+
+**Initial setup:**
+```bash
+npm install
+```
+
+**Build CSS for production:**
+```bash
+npm run build:css
+```
+
+**Watch mode for development (auto-rebuild on changes):**
+```bash
+npm run watch:css
+```
+
+The compiled CSS is located at `static/css/tailwind.css` and is already built and ready to use.
+
+## Production deployment notes
+
+### Static files
+- `STATICFILES_DIRS` points to the source assets in `static/` for local development.
+- `collectstatic` copies all static assets into `staticfiles/` for production serving.
+
+**Run during deploy:**
+```bash
+python manage.py collectstatic --noinput
+```
+
+**Serve in production (current setup: Nginx + Docker Compose):**
+- Nginx should serve `/static/` directly from `staticfiles/`.
+- Nginx should proxy requests to the app at `http://127.0.0.1:8000`.
+
+Example Nginx location blocks:
+```nginx
+location /static/ {
+   alias /opt/directory_factory/staticfiles/;
+   expires 30d;
+   add_header Cache-Control "public, max-age=2592000";
+}
+
+location / {
+   proxy_pass http://127.0.0.1:8000;
+   proxy_set_header Host $host;
+   proxy_set_header X-Real-IP $remote_addr;
+   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+   proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+### Environment variables
+Set these before running the app:
+- `DJANGO_SETTINGS_MODULE=directory_factory.settings`
+- `DJANGO_SECRET_KEY` (required in production)
+- `DJANGO_DEBUG=0`
+- `ALLOWED_HOSTS` (comma-separated)
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
+- `GOOGLE_MAPS_API_KEY` (optional if you use Google Maps)
+- `MAP_PROVIDER` (optional: `leaflet` or `google`)
+
+### Database
+Apply migrations on deploy:
+```bash
+python manage.py migrate
+```
+
+### Assets build
+Build the Tailwind CSS before deploy:
+```bash
+npm install
+npm run build:css
+```
+
+### Running with Docker
+For production runs on the server:
+```bash
+cd /opt/directory_factory
+docker compose -f docker-compose.prod.yml up --build -d
+```
 
 ## Manual setup (without Docker)
 1. Create and activate a virtual environment:
@@ -57,12 +140,19 @@ To stop and remove data: `docker-compose down -v`
 
 6. Visit http://127.0.0.1:8000/ to view the site.
 
+## Testing
+Run the Django test suite:
+```bash
+python manage.py test
+```
+
 ## Project structure
 - `directory/models.py` - Universal Listing model with JSONField, SaunaSubmission model for user submissions
 - `directory/niche_config.py` - Site configuration and filter definitions
 - `directory/utils.py` - Dynamic JSONB filtering logic
 - `directory/views.py` - Home, pSEO landing, and submission views
 - `directory/forms.py` - User submission form for crowdsourcing missing listings
+- `directory/tests/` - Django test modules
 - `directory/templates/` - Tailwind-styled templates with HTMX
 - `directory/management/commands/` - CLI tools for data maintenance
 
@@ -73,7 +163,7 @@ Allow users to submit missing saunas via a web form at `/submit/`:
 - Public submission form with all sauna fields (location, amenities, contact info)
 - Status workflow: pending → approved/rejected
 - Admin interface with bulk approve/reject actions
-- Email notifications for submitters (optional)
+- Email notifications are not enabled by default
 
 **Admin workflow:**
 1. Users submit saunas at `/submit/`
