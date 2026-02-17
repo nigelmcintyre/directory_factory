@@ -19,7 +19,10 @@ COPY . .
 # Make manage.py executable
 RUN chmod +x manage.py
 
+# Create staticfiles directory
+RUN mkdir -p /app/staticfiles
+
 EXPOSE 8000
 
-# Run migrations and start server
-CMD sh -c "python manage.py migrate && gunicorn directory_factory.wsgi:application --bind 0.0.0.0:8000"
+# Run migrations, collect static files, and start server
+CMD sh -c "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn directory_factory.wsgi:application --bind 0.0.0.0:8000"
