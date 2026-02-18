@@ -79,7 +79,13 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           port: ${{ secrets.DROPLET_PORT || 22 }}
           script: |
+            set -e
             cd ${{ secrets.DROPLET_PATH }}
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              echo "Working tree has local changes. Resolve before deploy."
+              git status -sb
+              exit 1
+            fi
             git pull
             docker compose -f docker-compose.prod.yml up --build -d
             docker compose exec web python manage.py migrate
