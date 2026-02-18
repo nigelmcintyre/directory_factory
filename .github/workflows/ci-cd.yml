@@ -1,0 +1,86 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: directory_factory
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_DB: directory_factory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      DJANGO_SETTINGS_MODULE: directory_factory.settings
+      DJANGO_SECRET_KEY: test-secret-key
+      DJANGO_DEBUG: "1"
+      ALLOWED_HOSTS: "*"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Build Tailwind CSS
+        run: npm run build:css
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Run tests
+        run: python manage.py test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: ${{ secrets.DROPLET_PORT || 22 }}
+          script: |
+            cd ${{ secrets.DROPLET_PATH }}
+            git pull
+            docker compose -f docker-compose.prod.yml up --build -d
+            docker compose exec web python manage.py migrate
+            docker compose exec web python manage.py collectstatic --noinput

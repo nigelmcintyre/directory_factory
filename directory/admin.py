@@ -4,7 +4,7 @@ from .models import Listing, SaunaSubmission
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ("name", "city", "county", "is_featured", "is_active", "created_at")
+    list_display = ("name", "city", "county", "is_featured", "is_active", "rating", "reviews_count", "created_at")
     search_fields = ("name", "city", "county")
     list_filter = ("is_featured", "is_active", "city", "county")
     actions = ["mark_as_featured", "mark_as_not_featured"]

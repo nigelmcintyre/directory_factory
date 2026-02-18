@@ -102,8 +102,17 @@ def get_filtered_listings(request) -> Tuple[Union[QuerySet[Listing], List[Listin
                 query |= Q(**{f"attributes__{key}__iexact": value})
             queryset = queryset.filter(query)
 
-    # Order by featured status first, then by name
-    queryset = queryset.order_by('-is_featured', 'name')
+    # Sorting
+    sort_by = request.GET.get("sort", "featured")
+    
+    if sort_by == "rating":
+        # Featured first, then highest rating, then most reviews
+        queryset = queryset.order_by('-is_featured', '-rating', '-reviews_count')
+    elif sort_by == "name":
+        queryset = queryset.order_by('-is_featured', 'name')
+    else:
+        # Default: Featured first, then name
+        queryset = queryset.order_by('-is_featured', 'name')
 
     near_me = _normalize_bool(request.GET.get("near_me")) is True
     user_lat = _parse_float(request.GET.get("lat"))
@@ -120,8 +129,19 @@ def get_filtered_listings(request) -> Tuple[Union[QuerySet[Listing], List[Listin
             if distance <= distance_km:
                 listing.distance_km = round(distance, 1)
                 results.append(listing)
-        # Sort by featured first, then by distance
-        results.sort(key=lambda item: (not item.is_featured, getattr(item, "distance_km", 0)))
+        
+        # Sort the in-memory list
+        if sort_by == "distance":
+             # Sort by distance (ASC)
+             results.sort(key=lambda item: (not item.is_featured, getattr(item, "distance_km", 9999)))
+        elif sort_by == "rating":
+             # Sort by rating (DESC)
+             results.sort(key=lambda item: (not item.is_featured, -(float(item.rating or 0))))
+        else:
+             # Default sort (Featured first, then distance or name)
+             # If strictly featured, maybe distance secondary?
+             results.sort(key=lambda item: (not item.is_featured, getattr(item, "distance_km", 9999)))
+
         return results, {
             "near_me": True,
             "user_lat": user_lat,

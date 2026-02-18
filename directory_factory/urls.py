@@ -11,6 +11,7 @@ sitemaps = {
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("blog/", include("blog.urls")),
     path("robots.txt", directory_views.robots_txt, name="robots_txt"),
     path(
         "sitemap.xml",

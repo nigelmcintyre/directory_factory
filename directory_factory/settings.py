@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sitemaps",
     "directory",
+    "blog",
 ]
 
 MIDDLEWARE = [

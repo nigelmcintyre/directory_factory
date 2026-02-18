@@ -165,6 +165,9 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
     listing = get_object_or_404(Listing, slug=slug, is_active=True)
     county_slug = slugify(listing.county) if listing.county else ""
     
+    # Get Google reviews from structured_data
+    google_reviews = listing.structured_data.get('google_reviews', []) if listing.structured_data else []
+    
     # Get related listings (prefer same county, fallback to city)
     if listing.county:
         related_queryset = (
@@ -230,6 +233,7 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
         "filters": FILTERS,
         "listing": listing,
         "related_listings": related_listings,
+        "google_reviews": google_reviews,
         "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
         "page_title": page_title,
         "meta_description": meta_description,
@@ -252,7 +256,9 @@ def submit_sauna(request: HttpRequest) -> HttpResponse:
             )
             return redirect('submit_success')
     else:
-        form = SaunaSubmissionForm()
+        # Allow pre-filling form via GET parameters (e.g., from "Claim this listing")
+        initial_data = request.GET.dict()
+        form = SaunaSubmissionForm(initial=initial_data)
     
     page_title = f"Submit a Sauna | {SITE_NAME}"
     meta_description = "Know a sauna that's not listed? Help us grow Ireland's most comprehensive sauna directory by submitting details."

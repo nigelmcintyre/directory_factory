@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<!-- Schema.org for Blog Post -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "{{ post.title|escapejs }}",
+  "image": [
+    "{{ post.cover_image_url|default:'https://saunaguide.ie/static/images/sauna-default.jpg' }}"
+   ],
+  "datePublished": "{{ post.created_at|date:'c' }}",
+  "dateModified": "{{ post.updated_at|date:'c' }}",
+  "author": [{
+      "@type": "Person",
+      "name": "{{ post.author|escapejs }}"
+    }]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<article class="bg-white py-12">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header class="mb-10 text-center">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4">{{ post.title }}</h1>
+            <div class="flex items-center justify-center text-slate-500 text-sm">
+                <span>{{ post.created_at|date:"F j, Y" }}</span>
+                <span class="mx-2">•</span>
+                <span>By {{ post.author }}</span>
+            </div>
+        </header>
+
+        {% if post.cover_image_url %}
+        <figure class="mb-10">
+            <img class="w-full rounded-2xl shadow-lg object-cover max-h-[500px]" src="{{ post.cover_image_url }}" alt="{{ post.title }}" loading="lazy">
+        </figure>
+        {% endif %}
+
+        <div class="prose prose-lg prose-slate mx-auto">
+            {{ post.content|linebreaks }}
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-slate-200">
+            <a href="{% url 'post_list' %}" class="inline-flex items-center text-primary hover:text-primary-dark font-medium">
+                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to all articles
+            </a>
+        </div>
+    </div>
+</article>
+{% endblock %}
