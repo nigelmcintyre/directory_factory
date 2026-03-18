@@ -220,6 +220,35 @@ Verifies:
 - Phone number formatting
 - Website URLs
 
+#### Auto-refresh Photo References (Cron)
+Refresh stale Google photo references automatically with a host-level cron job.
+
+1. Make the wrapper executable:
+   ```bash
+   chmod +x refresh_photo_refs.sh
+   ```
+
+2. Test it manually:
+   ```bash
+   ./refresh_photo_refs.sh --limit 10 --verbose
+   ```
+
+3. Add a cron entry (example: weekly on Sunday at 03:20):
+   ```bash
+   crontab -e
+   ```
+
+   Then add:
+   ```cron
+   20 3 * * 0 cd /opt/directory_factory && ./refresh_photo_refs.sh >> /opt/directory_factory/logs/cron.log 2>&1
+   ```
+
+What the wrapper does:
+- Runs `refresh_photo_refs` with `--dry-run` first to detect outdated refs.
+- Runs the real update only when outdated refs are found.
+- Uses a lock file to prevent overlapping runs.
+- Writes timestamped logs to `./logs/` by default (or a custom `--log-dir`).
+
 ### Google Maps API Integration
 Requires a Google Maps API key with Places API enabled:
 
