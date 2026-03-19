@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load markdown_extras %}
 
 {% block extra_head %}
 <!-- Schema.org for Blog Post -->
@@ -8,7 +9,7 @@
   "@type": "BlogPosting",
   "headline": "{{ post.title|escapejs }}",
   "image": [
-    "{{ post.cover_image_url|default:'https://saunaguide.ie/static/images/sauna-default.jpg' }}"
+        "{{ post.display_cover_image_url }}"
    ],
   "datePublished": "{{ post.created_at|date:'c' }}",
   "dateModified": "{{ post.updated_at|date:'c' }}",
@@ -21,10 +22,13 @@
 {% endblock %}
 
 {% block content %}
-<article class="bg-white py-12">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header class="mb-10 text-center">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4">{{ post.title }}</h1>
+<article class="bg-stone-50 py-12 sm:py-16">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header class="mb-10 text-center max-w-3xl mx-auto">
+            <div class="inline-flex items-center rounded-full bg-amber-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-amber-800 mb-5">
+                Sauna Guide Blog
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4">{{ post.title }}</h1>
             <div class="flex items-center justify-center text-slate-500 text-sm">
                 <span>{{ post.created_at|date:"F j, Y" }}</span>
                 <span class="mx-2">•</span>
@@ -32,14 +36,14 @@
             </div>
         </header>
 
-        {% if post.cover_image_url %}
-        <figure class="mb-10">
-            <img class="w-full rounded-2xl shadow-lg object-cover max-h-[500px]" src="{{ post.cover_image_url }}" alt="{{ post.title }}" loading="lazy">
+        <figure class="mb-12 overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-xl shadow-stone-200/70">
+            <img class="w-full object-cover max-h-[540px]" src="{{ post.display_cover_image_url }}" alt="{{ post.title }}" loading="lazy">
         </figure>
-        {% endif %}
 
-        <div class="prose prose-lg prose-slate mx-auto">
-            {{ post.content|linebreaks }}
+        <div class="mx-auto max-w-3xl rounded-[2rem] bg-white px-6 py-8 shadow-sm ring-1 ring-stone-200 sm:px-10 sm:py-10">
+            <div class="prose prose-lg prose-slate max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-a:text-primary prose-a:no-underline hover:prose-a:text-primary-dark prose-strong:text-slate-900 prose-img:rounded-2xl prose-blockquote:border-l-4 prose-blockquote:border-amber-400 prose-blockquote:bg-amber-50 prose-blockquote:px-6 prose-blockquote:py-4 prose-code:rounded prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-slate-900 prose-pre:rounded-2xl prose-pre:bg-slate-900">
+                {{ post.content|markdownify }}
+            </div>
         </div>
 
         <div class="mt-12 pt-8 border-t border-slate-200">

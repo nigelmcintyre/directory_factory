@@ -1,6 +1,16 @@
 from django.db import models
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.text import slugify
+
+
+CURATED_COVER_IMAGES = {
+    "top-5-health-benefits-of-regular-sauna-use": "images/blog/sauna-benefits.webp",
+    "wood-fired-vs-infrared-which-sauna-is-right-for-you": "images/blog/sauna-types.webp",
+    "the-rise-of-sea-swimming-sauna-culture-in-ireland": "images/blog/sauna-ireland.webp",
+}
+
+DEFAULT_COVER_IMAGE = "images/blog/sauna-default.svg"
 
 
 class Post(models.Model):
@@ -22,6 +32,15 @@ class Post(models.Model):
 
     def get_absolute_url(self):
         return reverse('post_detail', args=[self.slug])
+
+    @property
+    def display_cover_image_url(self):
+        image_path = CURATED_COVER_IMAGES.get(self.slug)
+        if image_path:
+            return static(image_path)
+        if self.cover_image_url:
+            return self.cover_image_url
+        return static(DEFAULT_COVER_IMAGE)
 
     def save(self, *args, **kwargs):
         if not self.slug:
