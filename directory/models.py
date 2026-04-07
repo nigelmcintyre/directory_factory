@@ -13,6 +13,7 @@ class Listing(models.Model):
     phone = models.CharField(max_length=50, blank=True)
     place_id = models.CharField(max_length=255, blank=True)
     photo_ref = models.CharField(max_length=500, blank=True)
+    photo_data = models.TextField(blank=True, help_text="Base64 encoded WebP image data")
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     rating = models.DecimalField(max_digits=2, decimal_places=1, null=True, blank=True)
