@@ -9,6 +9,11 @@ DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
 ALLOWED_HOSTS = [host for host in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if host]
 
+CSRF_TRUSTED_ORIGINS = [origin for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin]
+
+GOOGLE_TAG_ID = os.getenv("GOOGLE_TAG_ID", os.getenv("GOOGLE_ANALYTICS_ID", "")).strip()
+GOOGLE_ADS_ID = os.getenv("GOOGLE_ADS_ID", "AW-17961593385").strip()
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -45,6 +50,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "directory.context_processors.analytics_settings",
             ],
         },
     }

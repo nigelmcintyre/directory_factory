@@ -2,15 +2,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17961593385"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+        {% if google_tag_id or google_ads_id %}
+        <script async src="https://www.googletagmanager.com/gtag/js?id={% firstof google_tag_id google_ads_id %}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-      gtag('config', 'AW-17961593385');
-    </script>
+            {% if google_tag_id %}
+            gtag('config', '{{ google_tag_id }}');
+            {% endif %}
+            {% if google_ads_id %}
+            gtag('config', '{{ google_ads_id }}');
+            {% endif %}
+        </script>
+        {% endif %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ page_title }}</title>

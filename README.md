@@ -84,6 +84,8 @@ Set these before running the app:
 - `ALLOWED_HOSTS` (comma-separated)
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
 - `GOOGLE_MAPS_API_KEY` (optional if you use Google Maps)
+- `GOOGLE_TAG_ID` (optional: your Google tag ID, for example `GT-XXXXXXXXXX`; falls back to `GOOGLE_ANALYTICS_ID` if set)
+- `GOOGLE_ADS_ID` (optional: your Google Ads tag ID, defaults to the current configured value)
 - `MAP_PROVIDER` (optional: `leaflet` or `google`)
 
 ### Database
