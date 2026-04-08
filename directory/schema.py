@@ -1,11 +1,12 @@
 import re
+from typing import Optional, Tuple
 
 from django.utils.text import slugify
 
 from directory.niche_config import SITE_NAME, DOMAIN
 
 
-def _normalize_time_token(token: str) -> str | None:
+def _normalize_time_token(token: str) -> Optional[str]:
     token = token.strip().lower()
     match = re.match(r"^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$", token)
     if not match:
@@ -25,7 +26,7 @@ def _normalize_time_token(token: str) -> str | None:
     return f"{hour:02d}:{minute:02d}"
 
 
-def _normalize_time_range(range_text: str) -> tuple[str, str] | None:
+def _normalize_time_range(range_text: str) -> Optional[Tuple[str, str]]:
     if "-" not in range_text:
         return None
     start_raw, end_raw = [part.strip() for part in range_text.split("-", 1)]

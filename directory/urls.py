@@ -6,6 +6,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("submit/", views.submit_sauna, name="submit_sauna"),
     path("submit/success/", views.submit_success, name="submit_success"),
+    path("get-featured/", views.get_featured, name="get_featured"),
     path("listing/<slug:slug>/", views.listing_detail, name="listing_detail"),
     path("<slug:county>/", views.pseo_landing, name="pseo_landing"),
 ]

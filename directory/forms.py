@@ -125,3 +125,59 @@ class SaunaSubmissionForm(forms.ModelForm):
         self.fields['county'].required = True
         self.fields['heat_source'].required = True
         self.fields['submitter_email'].required = True
+
+
+class PartnerInquiryForm(forms.Form):
+    """Form for contacting about featured listing / partner programs"""
+    
+    sauna_name = forms.CharField(
+        max_length=255,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': 'Your Sauna Name'
+        })
+    )
+    contact_name = forms.CharField(
+        max_length=255,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': 'Your Name'
+        })
+    )
+    contact_email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': 'your@email.com'
+        })
+    )
+    phone = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': '+353 1 234 5678'
+        })
+    )
+    tier_interest = forms.ChoiceField(
+        required=True,
+        choices=[
+            ('tier1', 'Tier 1: Featured Listing + Booking Link (€39/month)'),
+            ('tier2_existing', 'Tier 2A: Featured + Embedded Booking (Bring your existing booking platform) (€49/month + €350 setup)'),
+            ('tier2_managed', 'Tier 2B: Featured + Embedded Booking (We set you up on SimplyBook.me) (€49/month + €350 setup)'),
+            ('all', 'Tell me more about all options'),
+        ],
+        widget=forms.RadioSelect(attrs={
+            'class': 'mt-2'
+        })
+    )
+    message = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+            'placeholder': 'Tell us about your booking situation (optional)...',
+            'rows': 4
+        })
+    )

@@ -7,7 +7,7 @@ from django.http import HttpRequest, HttpResponse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
 from .models import Listing
-from .forms import SaunaSubmissionForm
+from .forms import SaunaSubmissionForm, PartnerInquiryForm
 from .niche_config import SITE_NAME, DOMAIN, FILTERS
 from .utils import get_filtered_listings
 from .schema import generate_breadcrumb_schema, generate_listing_schema
@@ -287,3 +287,71 @@ def submit_success(request: HttpRequest) -> HttpResponse:
     }
     
     return render(request, "submit_success.html", context)
+
+
+def get_featured(request: HttpRequest) -> HttpResponse:
+    """Partner program page - featured listing inquiry form"""
+    from django.core.mail import send_mail
+    
+    if request.method == 'POST':
+        form = PartnerInquiryForm(request.POST)
+        if form.is_valid():
+            # Send email to admin
+            subject = f"Partnership Inquiry: {form.cleaned_data['sauna_name']}"
+            message = f"""
+Partner Program Inquiry
+========================
+
+Sauna Name: {form.cleaned_data['sauna_name']}
+Contact Name: {form.cleaned_data['contact_name']}
+Email: {form.cleaned_data['contact_email']}
+Phone: {form.cleaned_data.get('phone', 'Not provided')}
+Tier Interest: {dict(form.fields['tier_interest'].choices).get(form.cleaned_data['tier_interest'], form.cleaned_data['tier_interest'])}
+
+Message:
+{form.cleaned_data.get('message', 'No additional message provided')}
+
+---
+This inquiry came from the Get Featured page at https://{DOMAIN}{request.path}
+            """
+            
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.ADMIN_EMAIL],
+                    fail_silently=False,
+                )
+                messages.success(
+                    request,
+                    "Thank you! We've received your inquiry and will be in touch as soon as possible."
+                )
+            except Exception as e:
+                messages.error(
+                    request,
+                    "We received your inquiry, but there was an issue sending our confirmation email. We'll still follow up shortly."
+                )
+            
+            # Reset form after successful submission
+            form = PartnerInquiryForm()
+    else:
+        form = PartnerInquiryForm()
+    
+    page_title = f"Get Featured | Partner Program | {SITE_NAME}"
+    meta_description = "Grow your bookings with a featured listing on the sauna directory. Featured placement, booking integration, and more starting at €39/month."
+    
+    context = {
+        "site_name": SITE_NAME,
+        "domain": DOMAIN,
+        "form": form,
+        "page_title": page_title,
+        "meta_description": meta_description,
+        "tier_prices": {
+            "tier1": 39,
+            "tier2": 49,
+            "setup_fee": 350,
+        }
+    }
+    
+    return render(request, "get_featured.html", context)

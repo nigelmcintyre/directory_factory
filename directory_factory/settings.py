@@ -108,3 +108,13 @@ MAP_DEFAULT_CENTER_LNG = float(os.getenv("MAP_DEFAULT_CENTER_LNG", "-7.6921"))
 MAP_DEFAULT_ZOOM = int(os.getenv("MAP_DEFAULT_ZOOM", "7"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Email Configuration
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@yourdomain.com")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "nigelmcintyre1995@gmail.com")
