@@ -105,14 +105,7 @@
 </script>
 {% if map_enabled %}
     <link rel="stylesheet" href="{% static 'css/leaflet/leaflet.css' %}" />
-    {% if map_provider == "google" and google_maps_api_key %}
-        <script
-            src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}"
-            defer
-        ></script>
-    {% else %}
-        <script src="{% static 'js/leaflet.js' %}" defer></script>
-    {% endif %}
+    <script src="{% static 'js/leaflet.js' %}" defer></script>
 {% endif %}
 {% endblock %}
 
@@ -596,9 +589,7 @@
                 marker.bindPopup(`<strong>${listing.name}</strong><br/>${location}${distanceText}<br/>
                     ${listing.photo_data ?
                         `<img src="data:image/webp;base64,${listing.photo_data}" style="max-width:200px;max-height:150px;" alt="${listing.name}"/>` :
-                        (listing.photo_ref && google_maps_api_key ?
-                            `<img src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${listing.photo_ref}&key=${google_maps_api_key}" style="max-width:200px;max-height:150px;" alt="${listing.name}"/>` :
-                            '')}<br/>
+                        ''}<br/>
                     <a href="${listing.url}">View Details</a>`);
                 mapState.markers.push(marker);
                 bounds.push([listing.lat, listing.lng]);

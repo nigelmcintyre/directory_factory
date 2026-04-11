@@ -64,7 +64,6 @@ def home(request: HttpRequest) -> HttpResponse:
         "filters": FILTERS,
         "listings": listings,
         "listings_count": listings_count,
-        "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
         "map_provider": getattr(settings, "MAP_PROVIDER", "leaflet"),
         "map_tiles_url": getattr(
             settings,
@@ -145,7 +144,6 @@ def pseo_landing(request: HttpRequest, county: str) -> HttpResponse:
         "filters": FILTERS,
         "listings": listings,
         "listings_count": listings_count,
-        "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
         "page_title": page_title,
         "meta_description": meta_description,
         "county": county_display,
@@ -234,7 +232,6 @@ def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
         "listing": listing,
         "related_listings": related_listings,
         "google_reviews": google_reviews,
-        "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
         "page_title": page_title,
         "meta_description": meta_description,
         "meta_keywords": ", ".join(meta_keywords),

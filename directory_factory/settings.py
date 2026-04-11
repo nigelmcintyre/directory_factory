@@ -98,7 +98,7 @@ if not DEBUG:
     # Enable browser caching for static files in production
     STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
 
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "AIzaSyBKh443xE18fK4YxabH-OhRgWpAxAthIvM")
+ENABLE_GOOGLE_PLACES_SYNC = os.getenv("ENABLE_GOOGLE_PLACES_SYNC", "false").lower() == "true"
 
 MAP_PROVIDER = os.getenv("MAP_PROVIDER", "leaflet")
 MAP_TILES_URL = os.getenv("MAP_TILES_URL", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")

@@ -6,10 +6,10 @@
             <span>Featured</span>
         </div>
     {% endif %}
-    {% if listing.photo_ref and google_maps_api_key %}
+    {% if listing.photo_data %}
         <a href="{% url 'listing_detail' listing.slug %}" class="block mb-4">
             <img
-                src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference={{ listing.photo_ref }}&key={{ google_maps_api_key }}"
+                src="data:image/webp;base64,{{ listing.photo_data }}"
                 alt="{{ listing.name }} - {% if listing.attributes.heat_source %}{{ listing.attributes.heat_source }} sauna{% else %}sauna{% endif %} in {% firstof listing.county listing.city %}{% if listing.attributes.sea_view == 'yes' %} with sea view{% endif %}{% if listing.attributes.cold_plunge == 'yes' %} and cold plunge{% endif %}"
                 class="w-full h-48 object-cover rounded-xl"
                 loading="lazy"
