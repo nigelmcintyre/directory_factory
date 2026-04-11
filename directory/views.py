@@ -1,4 +1,5 @@
 import json
+import os
 from urllib.parse import urlencode
 from django.utils.text import slugify
 from django.conf import settings
@@ -288,38 +289,42 @@ def submit_success(request: HttpRequest) -> HttpResponse:
 
 def get_featured(request: HttpRequest) -> HttpResponse:
     """Partner program page - featured listing inquiry form"""
-    from django.core.mail import send_mail
-    
+    import urllib.request
+    import urllib.parse
+    import json
+
+    def send_telegram(text: str) -> None:
+        token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+        chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
+        if not token or not chat_id:
+            return
+        payload = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "HTML"}).encode()
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data=payload,
+            method="POST",
+        )
+        urllib.request.urlopen(req, timeout=10)
+
     if request.method == 'POST':
         form = PartnerInquiryForm(request.POST)
         if form.is_valid():
-            # Send email to admin
-            subject = f"Partnership Inquiry: {form.cleaned_data['sauna_name']}"
-            message = f"""
-Partner Program Inquiry
-========================
+            tier_label = dict(form.fields['tier_interest'].choices).get(
+                form.cleaned_data['tier_interest'], form.cleaned_data['tier_interest']
+            )
+            telegram_message = (
+                f"<b>New Partner Inquiry</b>\n\n"
+                f"<b>Sauna:</b> {form.cleaned_data['sauna_name']}\n"
+                f"<b>Contact:</b> {form.cleaned_data['contact_name']}\n"
+                f"<b>Email:</b> {form.cleaned_data['contact_email']}\n"
+                f"<b>Phone:</b> {form.cleaned_data.get('phone') or 'Not provided'}\n"
+                f"<b>Tier:</b> {tier_label}\n\n"
+                f"<b>Message:</b>\n{form.cleaned_data.get('message') or 'None'}\n\n"
+                f"<a href=\"https://{DOMAIN}{request.path}\">Get Featured page</a>"
+            )
 
-Sauna Name: {form.cleaned_data['sauna_name']}
-Contact Name: {form.cleaned_data['contact_name']}
-Email: {form.cleaned_data['contact_email']}
-Phone: {form.cleaned_data.get('phone', 'Not provided')}
-Tier Interest: {dict(form.fields['tier_interest'].choices).get(form.cleaned_data['tier_interest'], form.cleaned_data['tier_interest'])}
-
-Message:
-{form.cleaned_data.get('message', 'No additional message provided')}
-
----
-This inquiry came from the Get Featured page at https://{DOMAIN}{request.path}
-            """
-            
             try:
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings.ADMIN_EMAIL],
-                    fail_silently=False,
-                )
+                send_telegram(telegram_message)
                 messages.success(
                     request,
                     "Thank you! We've received your inquiry and will be in touch as soon as possible."
@@ -327,7 +332,7 @@ This inquiry came from the Get Featured page at https://{DOMAIN}{request.path}
             except Exception as e:
                 messages.error(
                     request,
-                    "We received your inquiry, but there was an issue sending our confirmation email. We'll still follow up shortly."
+                    "We received your inquiry, but there was an issue sending our confirmation. We'll still follow up shortly."
                 )
             
             # Reset form after successful submission
