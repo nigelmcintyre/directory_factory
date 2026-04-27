@@ -310,8 +310,6 @@
 
     <section>
         {% if map_enabled %}
-            {# Persistent map panel lives OUTSIDE #listing-results so the Leaflet
-               instance survives HTMX filter swaps. #map-data is swapped via OOB. #}
             <div
                 id="map-panel"
                 class="mb-6 hidden"
