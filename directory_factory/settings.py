@@ -121,3 +121,8 @@ ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "nigelmcintyre1995@gmail.com")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+
+STRIPE_ENABLED = os.getenv("STRIPE_ENABLED", "false").lower() == "true"
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+FEATURED_GRACE_DAYS = int(os.getenv("FEATURED_GRACE_DAYS", "7"))

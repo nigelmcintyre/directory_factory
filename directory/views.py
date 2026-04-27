@@ -1,13 +1,16 @@
 import json
 import os
 from urllib.parse import urlencode
+from datetime import datetime, timezone as dt_timezone, timedelta
 from django.utils.text import slugify
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render, redirect
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
-from .models import Listing
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from .models import Listing, FeaturedListingSubscription, StripeWebhookEvent
 from .forms import SaunaSubmissionForm, PartnerInquiryForm
 from .niche_config import SITE_NAME, DOMAIN, FILTERS
 from .utils import get_filtered_listings, paginate_listings
@@ -16,6 +19,123 @@ from .schema import generate_breadcrumb_schema, generate_listing_schema
 
 def _is_htmx(request: HttpRequest) -> bool:
     return request.headers.get("HX-Request", "false").lower() == "true"
+
+
+def _to_datetime(timestamp):
+    if not timestamp:
+        return None
+    return datetime.fromtimestamp(timestamp, tz=dt_timezone.utc)
+
+
+def _sync_featured_flag(subscription: FeaturedListingSubscription) -> None:
+    if not subscription.auto_manage_featured:
+        return
+    should_be_featured = subscription.should_be_featured(timezone.now())
+    if subscription.listing.is_featured != should_be_featured:
+        subscription.listing.is_featured = should_be_featured
+        subscription.listing.save(update_fields=["is_featured", "updated_at"])
+
+
+def _upsert_subscription_from_stripe(subscription_payload: dict) -> None:
+    subscription_id = subscription_payload.get("id")
+    if not subscription_id:
+        return
+
+    record = FeaturedListingSubscription.objects.filter(
+        stripe_subscription_id=subscription_id
+    ).select_related("listing").first()
+    if not record:
+        # Manual onboarding flow: create this link in admin first.
+        return
+
+    items = subscription_payload.get("items", {}).get("data", [])
+    first_item = items[0] if items else {}
+    price_id = (first_item.get("price") or {}).get("id", "")
+
+    record.stripe_customer_id = subscription_payload.get("customer", "") or ""
+    record.stripe_price_id = price_id
+    record.subscription_status = subscription_payload.get("status", record.subscription_status)
+    # Stripe API >=2025-03 moved current_period_end onto subscription items.
+    period_end = subscription_payload.get("current_period_end")
+    if not period_end and first_item:
+        period_end = first_item.get("current_period_end")
+    record.current_period_end = _to_datetime(period_end)
+    record.cancel_at_period_end = bool(subscription_payload.get("cancel_at_period_end", False))
+    if record.subscription_status in {"active", "trialing"}:
+        record.grace_until = None
+    record.save()
+    _sync_featured_flag(record)
+
+
+@csrf_exempt
+def stripe_webhook(request: HttpRequest) -> HttpResponse:
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    if not getattr(settings, "STRIPE_ENABLED", False):
+        return JsonResponse({"ok": False, "message": "Stripe disabled"}, status=503)
+
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+    endpoint_secret = getattr(settings, "STRIPE_WEBHOOK_SECRET", "")
+    if not endpoint_secret:
+        return JsonResponse(
+            {"ok": False, "message": "STRIPE_WEBHOOK_SECRET not configured"},
+            status=503,
+        )
+
+    try:
+        import stripe
+    except ImportError:
+        return JsonResponse(
+            {"ok": False, "message": "stripe package not installed"},
+            status=503,
+        )
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except ValueError:
+        return HttpResponse(status=400)
+    except stripe.SignatureVerificationError:
+        return HttpResponse(status=400)
+
+    event_type = event.get("type", "")
+    event_data = event.get("data", {}).get("object", {})
+    event_id = event.get("id", "")
+
+    # Idempotency: Stripe retries deliveries. Skip if we've already processed this event.
+    if event_id:
+        _, created = StripeWebhookEvent.objects.get_or_create(
+            stripe_event_id=event_id,
+            defaults={"event_type": event_type},
+        )
+        if not created:
+            return JsonResponse({"ok": True, "duplicate": True})
+
+    if event_type in {
+        "customer.subscription.created",
+        "customer.subscription.updated",
+        "customer.subscription.deleted",
+    }:
+        _upsert_subscription_from_stripe(event_data)
+
+    elif event_type in {"invoice.paid", "invoice.payment_failed"}:
+        subscription_id = event_data.get("subscription")
+        if subscription_id:
+            record = FeaturedListingSubscription.objects.filter(
+                stripe_subscription_id=subscription_id
+            ).select_related("listing").first()
+            if record:
+                record.last_invoice_status = event_data.get("status", "") or ""
+                if event_type == "invoice.payment_failed":
+                    grace_days = getattr(settings, "FEATURED_GRACE_DAYS", 7)
+                    record.grace_until = timezone.now() + timedelta(days=grace_days)
+                elif event_type == "invoice.paid":
+                    record.grace_until = None
+                record.save(update_fields=["last_invoice_status", "grace_until", "updated_at"])
+                _sync_featured_flag(record)
+
+    return JsonResponse({"ok": True})
 
 
 def robots_txt(request: HttpRequest) -> HttpResponse:

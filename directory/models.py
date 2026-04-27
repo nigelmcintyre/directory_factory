@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
+from django.utils import timezone
 
 
 class Listing(models.Model):
@@ -73,3 +74,72 @@ class SaunaSubmission(models.Model):
         
     def __str__(self) -> str:
         return f"{self.name} - {self.status}"
+
+
+class FeaturedListingSubscription(models.Model):
+    STATUS_CHOICES = [
+        ("incomplete", "Incomplete"),
+        ("incomplete_expired", "Incomplete Expired"),
+        ("trialing", "Trialing"),
+        ("active", "Active"),
+        ("past_due", "Past Due"),
+        ("canceled", "Canceled"),
+        ("unpaid", "Unpaid"),
+        ("paused", "Paused"),
+    ]
+
+    listing = models.OneToOneField(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="featured_subscription",
+    )
+    stripe_customer_id = models.CharField(max_length=255, blank=True, db_index=True)
+    stripe_subscription_id = models.CharField(max_length=255, unique=True, db_index=True)
+    stripe_price_id = models.CharField(max_length=255, blank=True)
+    subscription_status = models.CharField(
+        max_length=32,
+        choices=STATUS_CHOICES,
+        default="incomplete",
+        db_index=True,
+    )
+    current_period_end = models.DateTimeField(null=True, blank=True)
+    cancel_at_period_end = models.BooleanField(default=False)
+    last_invoice_status = models.CharField(max_length=64, blank=True)
+    grace_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Optional grace window after payment failure before auto-unfeature.",
+    )
+    auto_manage_featured = models.BooleanField(
+        default=True,
+        help_text="When enabled, webhooks will update listing.is_featured automatically.",
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:
+        return f"{self.listing.name} ({self.subscription_status})"
+
+    def should_be_featured(self, now=None) -> bool:
+        now = now or timezone.now()
+        if self.subscription_status in {"active", "trialing"}:
+            return True
+        return bool(self.grace_until and self.grace_until >= now)
+
+
+class StripeWebhookEvent(models.Model):
+    """Record of processed Stripe webhook events for idempotency."""
+
+    stripe_event_id = models.CharField(max_length=255, unique=True)
+    event_type = models.CharField(max_length=128, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-received_at"]
+
+    def __str__(self) -> str:
+        return f"{self.event_type} {self.stripe_event_id}"

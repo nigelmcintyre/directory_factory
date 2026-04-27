@@ -1,13 +1,36 @@
 from django.contrib import admin
-from .models import Listing, SaunaSubmission
+from .models import Listing, SaunaSubmission, FeaturedListingSubscription
+
+
+class FeaturedListingSubscriptionInline(admin.StackedInline):
+    model = FeaturedListingSubscription
+    extra = 0
+    max_num = 1
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ("name", "city", "county", "is_featured", "is_active", "rating", "reviews_count", "created_at")
+    list_display = (
+        "name",
+        "city",
+        "county",
+        "is_featured",
+        "stripe_subscription_status",
+        "is_active",
+        "rating",
+        "reviews_count",
+        "created_at",
+    )
     search_fields = ("name", "city", "county")
     list_filter = ("is_featured", "is_active", "city", "county")
     actions = ["mark_as_featured", "mark_as_not_featured"]
+    inlines = [FeaturedListingSubscriptionInline]
+
+    def stripe_subscription_status(self, obj):
+        subscription = getattr(obj, "featured_subscription", None)
+        return subscription.subscription_status if subscription else "-"
+    stripe_subscription_status.short_description = "Stripe status"
     
     def mark_as_featured(self, request, queryset):
         updated = queryset.update(is_featured=True)
@@ -50,3 +73,20 @@ class SaunaSubmissionAdmin(admin.ModelAdmin):
         updated = queryset.update(status='rejected')
         self.message_user(request, f"{updated} submission(s) marked as rejected.")
     reject_submissions.short_description = "Mark selected as rejected"
+
+
+@admin.register(FeaturedListingSubscription)
+class FeaturedListingSubscriptionAdmin(admin.ModelAdmin):
+    list_display = (
+        "listing",
+        "subscription_status",
+        "stripe_subscription_id",
+        "stripe_customer_id",
+        "current_period_end",
+        "grace_until",
+        "auto_manage_featured",
+        "updated_at",
+    )
+    list_filter = ("subscription_status", "auto_manage_featured", "cancel_at_period_end")
+    search_fields = ("listing__name", "stripe_subscription_id", "stripe_customer_id")
+    readonly_fields = ("created_at", "updated_at")

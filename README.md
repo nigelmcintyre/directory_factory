@@ -6,7 +6,10 @@ Foundational Django 5 codebase for configuration-driven niche directory sites us
 - Universal `Listing` model with `attributes` and `structured_data` JSON fields
 - Configuration-driven filters in `niche_config.py`
 - HTMX-based filtering with server-rendered partials
+- Infinite-scroll pagination on listing pages (10 per page)
+- Persistent Leaflet map view that survives HTMX filter swaps
 - pSEO landing routes at `/<county>/`
+- Featured-listing Stripe subscriptions with webhook-driven status sync
 
 ## Quick start with Docker (Recommended)
 
@@ -295,6 +298,10 @@ Required:
 Optional:
 - `DJANGO_DEBUG` - Debug mode (default: true)
 - `DJANGO_SECRET_KEY` - Secret key for production
+- `STRIPE_ENABLED` - Set to `true` to activate the Stripe webhook (default: false)
+- `STRIPE_SECRET_KEY` - Stripe API secret key
+- `STRIPE_WEBHOOK_SECRET` - Endpoint signing secret from Stripe Dashboard
+- `FEATURED_GRACE_DAYS` - Days to keep a listing featured after a failed payment (default: 7)
 
 ### Filter Configuration
 Edit `directory/niche_config.py` to customize:
@@ -336,3 +343,28 @@ Run periodic checks:
 1. Edit in Django admin at `/admin/directory/listing/`
 2. Or update CSV and re-import
 3. Run verification to ensure consistency
+
+## Featured Listings (Stripe)
+
+Featured listings are billed via Stripe subscriptions. Onboarding is currently manual:
+
+1. Create the customer + subscription in the Stripe Dashboard.
+2. In Django admin, open the listing and add a `Featured Listing Subscription` inline record with the `stripe_subscription_id`.
+3. With `STRIPE_ENABLED=true` and a configured webhook, status changes are auto-applied to `listing.is_featured`.
+
+**Webhook endpoint:** `POST /billing/stripe/webhook/`
+
+**Stripe events to subscribe to:**
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.paid`
+- `invoice.payment_failed`
+
+**Behavior:**
+- `active` or `trialing` -> `is_featured = True`
+- `invoice.payment_failed` -> grace window of `FEATURED_GRACE_DAYS` days; listing stays featured during grace
+- `invoice.paid` -> grace cleared
+- `canceled` / `unpaid` past the grace window -> `is_featured = False`
+- Duplicate webhook deliveries are ignored via the `StripeWebhookEvent` table
+- Set `auto_manage_featured = False` on a subscription to override and pin the flag manually
