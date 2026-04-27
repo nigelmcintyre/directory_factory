@@ -309,6 +309,28 @@
 {% endif %}
 
     <section>
+        {% if map_enabled %}
+            {# Persistent map panel lives OUTSIDE #listing-results so the Leaflet
+               instance survives HTMX filter swaps. #map-data is swapped via OOB. #}
+            <div
+                id="map-panel"
+                class="mb-6 hidden"
+                data-map-provider="{{ map_provider }}"
+                data-user-lat="{{ user_lat|default:'' }}"
+                data-user-lng="{{ user_lng|default:'' }}"
+                data-default-lat="{{ map_center_lat }}"
+                data-default-lng="{{ map_center_lng }}"
+                data-default-zoom="{{ map_default_zoom }}"
+                data-tile-url="{{ map_tiles_url }}"
+                data-tile-attribution="{{ map_tiles_attribution }}"
+            >
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-md">
+                    <div id="sauna-map" class="h-[420px] w-full rounded-xl overflow-hidden"></div>
+                    <p id="map-status" class="mt-3 text-sm text-slate-500">Use the Near Me filter to center on your location.</p>
+                </div>
+            </div>
+            <script type="application/json" id="map-data">{{ map_listings_json|default:"[]"|safe }}</script>
+        {% endif %}
         <div id="listing-results">
             {% include "partials/listing_results.html" %}
         </div>
@@ -742,8 +764,11 @@
                 return;
             }
             panel.classList.toggle("hidden");
+            // Persist visibility across HTMX swaps so the user's choice survives filter changes.
+            const isVisible = !panel.classList.contains("hidden");
+            sessionStorage.setItem("mapPanelVisible", isVisible ? "1" : "0");
 
-            if (!panel.classList.contains("hidden")) {
+            if (isVisible) {
                 const stored = getStoredLocation();
                 if (!stored) {
                     const nearMeToggle = document.getElementById("near-me-toggle");
@@ -756,6 +781,10 @@
                     }
                 }
                 renderMap();
+                // Leaflet needs a size recompute once the container actually has a non-zero box.
+                if (mapState.map && mapState.provider === "leaflet") {
+                    setTimeout(() => mapState.map.invalidateSize(), 0);
+                }
             }
         };
 
@@ -803,10 +832,14 @@
 
         document.body.addEventListener("htmx:afterSwap", (event) => {
             if (event.target && event.target.id === "listing-results") {
-                // Don't destroy the map instance, just update markers
                 setupHandlers();
+                // Map panel and Leaflet instance are now persistent (outside the swap
+                // target). Just refresh markers from the freshly-OOB-swapped #map-data.
                 if (!getMapPanel()?.classList.contains("hidden")) {
                     renderMap();
+                    if (mapState.map && mapState.provider === "leaflet") {
+                        setTimeout(() => mapState.map.invalidateSize(), 0);
+                    }
                 }
             }
         });
