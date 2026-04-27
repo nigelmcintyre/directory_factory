@@ -10,7 +10,7 @@ from django.contrib import messages
 from .models import Listing
 from .forms import SaunaSubmissionForm, PartnerInquiryForm
 from .niche_config import SITE_NAME, DOMAIN, FILTERS
-from .utils import get_filtered_listings
+from .utils import get_filtered_listings, paginate_listings
 from .schema import generate_breadcrumb_schema, generate_listing_schema
 
 
@@ -22,6 +22,7 @@ def robots_txt(request: HttpRequest) -> HttpResponse:
     lines = [
         "User-agent: *",
         "Allow: /",
+        "Disallow: /submit/",
         f"Sitemap: https://{DOMAIN}/sitemap.xml",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
@@ -29,8 +30,22 @@ def robots_txt(request: HttpRequest) -> HttpResponse:
 
 def home(request: HttpRequest) -> HttpResponse:
     listings, near_me_context = get_filtered_listings(request)
-    listings_count = len(listings) if isinstance(listings, list) else listings.count()
-    
+    page_obj, listings_count, next_page_url = paginate_listings(request, listings)
+    page_listings = list(page_obj.object_list)
+
+    # For HTMX paginated requests (page > 1), return only the next page of cards.
+    if _is_htmx(request) and page_obj.number > 1:
+        return render(
+            request,
+            "partials/listing_page.html",
+            {
+                "filters": FILTERS,
+                "listings": page_listings,
+                "page_obj": page_obj,
+                "next_page_url": next_page_url,
+            },
+        )
+
     # Check if filters are applied for dynamic meta (prefer county)
     county = request.GET.get('county', '')
     city = request.GET.get('city', '')
@@ -43,28 +58,53 @@ def home(request: HttpRequest) -> HttpResponse:
         page_title = f"{SITE_NAME} - Find the Best Saunas in Ireland"
         meta_description = f"Discover {listings_count}+ saunas across Ireland. Filter by county, rating, and amenities to find your perfect sauna experience. Verified listings with photos, reviews, and contact info."
 
+    # Map markers should reflect ALL filtered listings, not just the current page.
+    # Use .values() to avoid loading the heavy photo_data column for every listing.
     map_listings = []
-    for listing in listings:
-        if listing.latitude is None or listing.longitude is None:
-            continue
-        map_listings.append(
-            {
-                "name": listing.name,
-                "lat": listing.latitude,
-                "lng": listing.longitude,
-                "location": listing.county or listing.city,
-                "address": listing.address,
-                "url": f"/listing/{listing.slug}/",
-                "distance_km": getattr(listing, "distance_km", None),
-            }
+    if isinstance(listings, list):
+        # near_me path returns a Python list with distance_km annotations
+        for listing in listings:
+            if listing.latitude is None or listing.longitude is None:
+                continue
+            map_listings.append(
+                {
+                    "name": listing.name,
+                    "lat": listing.latitude,
+                    "lng": listing.longitude,
+                    "location": listing.county or listing.city,
+                    "address": listing.address,
+                    "url": f"/listing/{listing.slug}/",
+                    "distance_km": getattr(listing, "distance_km", None),
+                }
+            )
+    else:
+        rows = (
+            listings
+            .exclude(latitude__isnull=True)
+            .exclude(longitude__isnull=True)
+            .values("name", "latitude", "longitude", "county", "city", "address", "slug")
         )
+        for row in rows:
+            map_listings.append(
+                {
+                    "name": row["name"],
+                    "lat": row["latitude"],
+                    "lng": row["longitude"],
+                    "location": row["county"] or row["city"],
+                    "address": row["address"],
+                    "url": f"/listing/{row['slug']}/",
+                    "distance_km": None,
+                }
+            )
     
     context = {
         "site_name": SITE_NAME,
         "domain": DOMAIN,
         "filters": FILTERS,
-        "listings": listings,
+        "listings": page_listings,
         "listings_count": listings_count,
+        "page_obj": page_obj,
+        "next_page_url": next_page_url,
         "map_provider": getattr(settings, "MAP_PROVIDER", "leaflet"),
         "map_tiles_url": getattr(
             settings,
@@ -138,13 +178,32 @@ def pseo_landing(request: HttpRequest, county: str) -> HttpResponse:
     # Generate Schema.org structured data
     breadcrumb_schema = generate_breadcrumb_schema(county_display, SITE_NAME, county_slug)
     listing_schemas = [generate_listing_schema(listing) for listing in listings[:5]]  # Top 5 listings
-    
+
+    # Paginate the listings (10 per page)
+    page_obj, _, next_page_url = paginate_listings(request, listings)
+    page_listings = list(page_obj.object_list)
+
+    # For HTMX paginated requests (page > 1), return only the next page of cards.
+    if _is_htmx(request) and page_obj.number > 1:
+        return render(
+            request,
+            "partials/listing_page.html",
+            {
+                "filters": FILTERS,
+                "listings": page_listings,
+                "page_obj": page_obj,
+                "next_page_url": next_page_url,
+            },
+        )
+
     context = {
         "site_name": SITE_NAME,
         "domain": DOMAIN,
         "filters": FILTERS,
-        "listings": listings,
+        "listings": page_listings,
         "listings_count": listings_count,
+        "page_obj": page_obj,
+        "next_page_url": next_page_url,
         "page_title": page_title,
         "meta_description": meta_description,
         "county": county_display,

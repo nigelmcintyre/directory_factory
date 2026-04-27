@@ -1,8 +1,39 @@
 from typing import Optional, Tuple, Dict, Any, List, Union
 from math import radians, cos, sin, asin, sqrt
+from urllib.parse import urlencode
+from django.core.paginator import Paginator, Page
 from django.db.models import Q, QuerySet
 from .models import Listing
 from .niche_config import FILTERS
+
+
+PAGE_SIZE = 10
+
+
+def paginate_listings(
+    request,
+    listings: Union[QuerySet[Listing], List[Listing]],
+    page_size: int = PAGE_SIZE,
+) -> Tuple[Page, int, str]:
+    """Paginate a listings queryset/list and build the next-page URL.
+
+    Returns a 3-tuple of (page_obj, total_count, next_page_url).
+    The next_page_url preserves all current GET filters and adds page=N+1.
+    Returns an empty next_page_url when there is no next page.
+    """
+    total_count = len(listings) if isinstance(listings, list) else listings.count()
+    paginator = Paginator(listings, page_size)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    next_page_url = ""
+    if page_obj.has_next():
+        params = request.GET.copy()
+        params["page"] = page_obj.next_page_number()
+        # Use request.path to keep current URL (county landing pages, home, etc.)
+        next_page_url = f"{request.path}?{urlencode(params, doseq=True)}"
+
+    return page_obj, total_count, next_page_url
 
 
 def _normalize_bool(value: Optional[str]) -> Optional[bool]:
