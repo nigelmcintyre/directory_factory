@@ -13,6 +13,7 @@ CSRF_TRUSTED_ORIGINS = [origin for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "
 
 GOOGLE_TAG_ID = os.getenv("GOOGLE_TAG_ID", os.getenv("GOOGLE_ANALYTICS_ID", "")).strip()
 GOOGLE_ADS_ID = os.getenv("GOOGLE_ADS_ID", "AW-17961593385").strip()
+GOOGLE_ADSENSE_CLIENT = os.getenv("GOOGLE_ADSENSE_CLIENT", "").strip()
 
 INSTALLED_APPS = [
     "django.contrib.admin",

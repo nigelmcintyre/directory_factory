@@ -29,6 +29,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       DJANGO_DEBUG: "true"
+      GOOGLE_ADSENSE_CLIENT: ca-pub-1872557624162625
     depends_on:
       db:
         condition: service_healthy
