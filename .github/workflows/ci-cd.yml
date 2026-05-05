@@ -81,6 +81,7 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.DROPLET_PATH }}
+            git ls-files | grep -E '(__pycache__|\.pyc$|\.pyo$)' | xargs git rm --cached -q 2>/dev/null || true
             if ! git diff --quiet || ! git diff --cached --quiet; then
               echo "Working tree has local changes. Resolve before deploy."
               git status -sb
