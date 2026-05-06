@@ -148,6 +148,11 @@ def robots_txt(request: HttpRequest) -> HttpResponse:
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
+def ads_txt(request: HttpRequest) -> HttpResponse:
+    content = "google.com, pub-1872557624162625, DIRECT, f08c47fec0942fa0\n"
+    return HttpResponse(content, content_type="text/plain")
+
+
 def home(request: HttpRequest) -> HttpResponse:
     listings, near_me_context = get_filtered_listings(request)
     page_obj, listings_count, next_page_url = paginate_listings(request, listings)
