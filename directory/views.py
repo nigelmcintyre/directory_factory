@@ -438,8 +438,14 @@ def submit_sauna(request: HttpRequest) -> HttpResponse:
             )
             return redirect('submit_success')
     else:
-        # Allow pre-filling form via GET parameters (e.g., from "Claim this listing")
-        initial_data = request.GET.dict()
+        # Only prefill when explicitly requested to avoid accidental/spammy query-string population.
+        prefill_allowed_fields = {'name', 'city', 'county', 'website'}
+        should_prefill = request.GET.get('prefill') == '1'
+        initial_data = {
+            key: value
+            for key, value in request.GET.items()
+            if key in prefill_allowed_fields
+        } if should_prefill else {}
         form = SaunaSubmissionForm(initial=initial_data)
     
     page_title = f"Submit a Sauna | {SITE_NAME}"
