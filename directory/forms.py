@@ -12,6 +12,14 @@ YES_NO_CHOICES = [
     ('not listed', 'Not Listed'),
 ]
 
+SELECT_INPUT_CLASSES = (
+    'mt-1 block w-full rounded-md border-gray-300 shadow-sm '
+    'focus:border-blue-500 focus:ring-blue-500 bg-white text-gray-900 '
+    'appearance-auto cursor-pointer relative z-10'
+)
+
+SELECT_INPUT_STYLE = '-webkit-appearance: menulist; appearance: auto;'
+
 
 class SaunaSubmissionForm(forms.ModelForm):
     class Meta:
@@ -32,7 +40,8 @@ class SaunaSubmissionForm(forms.ModelForm):
                 'placeholder': 'e.g., Dublin'
             }),
             'county': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                'class': SELECT_INPUT_CLASSES,
+                'style': SELECT_INPUT_STYLE,
             }),
             'address': forms.TextInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
@@ -52,22 +61,28 @@ class SaunaSubmissionForm(forms.ModelForm):
                 'placeholder': 'Tell us about this sauna - what makes it special, what amenities it has, etc.'
             }),
             'heat_source': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                'class': SELECT_INPUT_CLASSES,
+                'style': SELECT_INPUT_STYLE,
             }),
             'cold_plunge': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                'class': SELECT_INPUT_CLASSES,
+                'style': SELECT_INPUT_STYLE,
             }),
             'dog_friendly': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                'class': SELECT_INPUT_CLASSES,
+                'style': SELECT_INPUT_STYLE,
             }),
             'showers': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                'class': SELECT_INPUT_CLASSES,
+                'style': SELECT_INPUT_STYLE,
             }),
             'changing_facilities': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                'class': SELECT_INPUT_CLASSES,
+                'style': SELECT_INPUT_STYLE,
             }),
             'sea_view': forms.Select(attrs={
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                'class': SELECT_INPUT_CLASSES,
+                'style': SELECT_INPUT_STYLE,
             }),
             'opening_hours': forms.Textarea(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
@@ -109,15 +124,22 @@ class SaunaSubmissionForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        def set_dropdown_choices(field_name, placeholder, choices):
+            # These are model CharFields rendered with Select widgets.
+            # The options must be attached to the widget to render <option> tags.
+            all_choices = [('', placeholder)] + choices
+            self.fields[field_name].widget.choices = all_choices
+            self.fields[field_name].choices = all_choices
         
         # Set choices for dropdown fields
-        self.fields['county'].choices = [('', 'Select County')] + COUNTIES
-        self.fields['heat_source'].choices = [('', 'Select Heat Source')] + HEAT_SOURCE_CHOICES
-        self.fields['cold_plunge'].choices = [('', 'Select Option')] + YES_NO_CHOICES
-        self.fields['dog_friendly'].choices = [('', 'Select Option')] + YES_NO_CHOICES
-        self.fields['showers'].choices = [('', 'Select Option')] + YES_NO_CHOICES
-        self.fields['changing_facilities'].choices = [('', 'Select Option')] + YES_NO_CHOICES
-        self.fields['sea_view'].choices = [('', 'Select Option')] + YES_NO_CHOICES
+        set_dropdown_choices('county', 'Select County', COUNTIES)
+        set_dropdown_choices('heat_source', 'Select Heat Source', HEAT_SOURCE_CHOICES)
+        set_dropdown_choices('cold_plunge', 'Select Option', YES_NO_CHOICES)
+        set_dropdown_choices('dog_friendly', 'Select Option', YES_NO_CHOICES)
+        set_dropdown_choices('showers', 'Select Option', YES_NO_CHOICES)
+        set_dropdown_choices('changing_facilities', 'Select Option', YES_NO_CHOICES)
+        set_dropdown_choices('sea_view', 'Select Option', YES_NO_CHOICES)
         
         # Set required fields
         self.fields['name'].required = True
