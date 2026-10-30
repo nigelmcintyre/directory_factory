@@ -13,3 +13,7 @@ node_modules/
 package-lock.json
 staticfiles/
 docs/
+
+*.dump
+.env.local
+.vercel/

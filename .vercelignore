@@ -1,0 +1,10 @@
+*.dump
+*.csv
+.env
+.env.*
+!.env.example
+.venv/
+node_modules/
+staticfiles/
+docs/
+analytics_plan.md

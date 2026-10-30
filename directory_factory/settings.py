@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
 
+import dj_database_url
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,6 +12,9 @@ DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = [host for host in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if host]
 
 CSRF_TRUSTED_ORIGINS = [origin for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin]
+
+# Vercel terminates TLS; without this, sitemaps and other absolute URLs are built as http://.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 GOOGLE_TAG_ID = os.getenv("GOOGLE_TAG_ID", os.getenv("GOOGLE_ANALYTICS_ID", "")).strip()
 GOOGLE_ADS_ID = os.getenv("GOOGLE_ADS_ID", "AW-17961593385").strip()
@@ -59,16 +64,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "directory_factory.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "directory_factory"),
-        "USER": os.getenv("POSTGRES_USER", "postgres"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+if os.getenv("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.config(conn_max_age=600, conn_health_checks=True)}
+    # Neon's pooler runs PgBouncer in transaction mode, which can't keep server-side cursors open.
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "directory_factory"),
+            "USER": os.getenv("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
+            "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+            "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
