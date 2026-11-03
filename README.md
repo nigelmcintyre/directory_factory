@@ -1,370 +1,175 @@
-# Directory Factory
+# Sauna Guide (saunaguide.ie)
 
-Foundational Django 5 codebase for configuration-driven niche directory sites using PostgreSQL JSONB.
+A directory of saunas in Ireland, built with Django on the Directory Factory codebase: listings with JSONB attributes, configuration-driven filters and county landing pages.
 
-## What’s included
-- Universal `Listing` model with `attributes` and `structured_data` JSON fields
-- Configuration-driven filters in `niche_config.py`
-- HTMX-based filtering with server-rendered partials
-- Infinite-scroll pagination on listing pages (10 per page)
-- Persistent Leaflet map view that survives HTMX filter swaps
-- pSEO landing routes at `/<county>/`
-- Featured-listing Stripe subscriptions with webhook-driven status sync
+The roadmap and progress are in [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md).
 
-## Quick start with Docker (Recommended)
+## Stack and hosting
 
-1. Start the application with Docker Compose:
-   ```bash
-   docker-compose up --build
-   ```
+| Part | What | Notes |
+|---|---|---|
+| App | Django 5.2, Python 3.11, HTMX, Leaflet, Tailwind (prebuilt CSS) | Filters and infinite scroll are server-rendered HTMX partials |
+| Hosting | Vercel project `saunaguide` (team `simple-site-solutions`, region `lhr1`) | Every push to `main` deploys to production. `vercel.json` must keep `"framework": "django"`. |
+| Database | Neon Postgres project `saunaguide` (`little-leaf-76133932`, London), database `directory_factory` | The app connects with the pooled `DATABASE_URL` |
+| CI | GitHub Actions (`.github/workflows/ci-cd.yml`) | Runs `manage.py check` and the test suite against Postgres on every push and PR |
+| Analytics | GA4 property `531569261` (stream `G-M02JT3547M`), plus first-party listing stats in Postgres | See [Listing analytics](#listing-analytics-owner-reports) |
 
-2. Visit http://127.0.0.1:8000/ to view the site.
+`setup-droplet.sh`, `docker-compose.prod.yml` and the Nginx setup belong to the old DigitalOcean deployment and are no longer used.
 
-That's it! PostgreSQL and Django are running in containers.
+## Deploying
 
-To stop: `docker-compose down`
+1. **Apply any new migrations to Neon first. Vercel does not run migrations.** Code that depends on a missing table will return 500 errors. Do one of the following:
+   - Run `DATABASE_URL='<Neon connection string>' python manage.py migrate` locally. The connection string is in Neon console → Connect. It can't be pulled from Vercel because it's stored as a secret.
+   - Run the migration's SQL in the Neon SQL editor, then record the migration with `INSERT INTO django_migrations (app, name, applied) VALUES ('directory', '<migration name>', now());`.
+2. Push to `main`. Vercel builds and deploys in about a minute.
+3. Environment variable changes only take effect on the next deploy. To apply them without a code change, redeploy the latest production deployment from the Vercel dashboard or run `vercel redeploy <deployment-url> --target production`.
 
-To stop and remove data: `docker-compose down -v`
+## Local development
 
-## CSS Development
-
-This project uses Tailwind CSS compiled locally for optimal performance.
-
-**Initial setup:**
+**With Docker** (Postgres plus the dev server, with `DJANGO_DEBUG=true` already set):
 ```bash
-npm install
+docker-compose up --build
 ```
+Then open http://127.0.0.1:8000/.
 
-**Build CSS for production:**
+**Without Docker:**
 ```bash
-npm run build:css
-```
-
-**Watch mode for development (auto-rebuild on changes):**
-```bash
-npm run watch:css
-```
-
-The compiled CSS is located at `static/css/tailwind.css` and is already built and ready to use.
-
-## Production deployment notes
-
-### Static files
-- `STATICFILES_DIRS` points to the source assets in `static/` for local development.
-- `collectstatic` copies all static assets into `staticfiles/` for production serving.
-
-**Run during deploy:**
-```bash
-python manage.py collectstatic --noinput
-```
-
-**Serve in production (current setup: Nginx + Docker Compose):**
-- Nginx should serve `/static/` directly from `staticfiles/`.
-- Nginx should proxy requests to the app at `http://127.0.0.1:8000`.
-
-Example Nginx location blocks:
-```nginx
-location /static/ {
-   alias /opt/directory_factory/staticfiles/;
-   expires 30d;
-   add_header Cache-Control "public, max-age=2592000";
-}
-
-location / {
-   proxy_pass http://127.0.0.1:8000;
-   proxy_set_header Host $host;
-   proxy_set_header X-Real-IP $remote_addr;
-   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-   proxy_set_header X-Forwarded-Proto $scheme;
-}
-```
-
-### Environment variables
-Set these before running the app:
-- `DJANGO_SETTINGS_MODULE=directory_factory.settings`
-- `DJANGO_SECRET_KEY` (required in production)
-- `DJANGO_DEBUG=0`
-- `ALLOWED_HOSTS` (comma-separated)
-- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
-- `GOOGLE_MAPS_API_KEY` (optional if you use Google Maps)
-- `GOOGLE_TAG_ID` (optional: your Google tag ID, for example `GT-XXXXXXXXXX`; falls back to `GOOGLE_ANALYTICS_ID` if set)
-- `GOOGLE_ADS_ID` (optional: your Google Ads tag ID, defaults to the current configured value)
-- `MAP_PROVIDER` (optional: `leaflet` or `google`)
-
-### Database
-Apply migrations on deploy:
-```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+export DJANGO_DEBUG=true POSTGRES_HOST=localhost   # plus POSTGRES_DB/USER/PASSWORD if not the defaults
 python manage.py migrate
+python manage.py runserver
 ```
 
-### Assets build
-Build the Tailwind CSS before deploy:
-```bash
-npm install
-npm run build:css
-```
+`DJANGO_DEBUG` defaults to `false`. With debug off, the app refuses to start unless `DJANGO_SECRET_KEY` is set, so always set `DJANGO_DEBUG=true` locally.
 
-### Running with Docker
-For production runs on the server:
-```bash
-cd /opt/directory_factory
-docker compose -f docker-compose.prod.yml up --build -d
-```
-
-## Manual setup (without Docker)
-1. Create and activate a virtual environment:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Configure your PostgreSQL connection via environment variables:
-   ```bash
-   export POSTGRES_DB=directory_factory
-   export POSTGRES_USER=postgres
-   export POSTGRES_PASSWORD=postgres
-   export POSTGRES_HOST=localhost
-   export POSTGRES_PORT=5432
-   ```
-
-4. Run migrations:
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
-
-5. Start the development server:
-   ```bash
-   python manage.py runserver
-   ```
-
-6. Visit http://127.0.0.1:8000/ to view the site.
+**CSS:** after changing templates, run `npm install` once, then `npm run build:css`, or `npm run watch:css` while editing. The output, `static/css/tailwind.css`, is committed.
 
 ## Testing
-Run the Django test suite:
+
 ```bash
 python manage.py test
 ```
 
-## Project structure
-- `directory/models.py` - Universal Listing model with JSONField, SaunaSubmission model for user submissions
-- `directory/niche_config.py` - Site configuration and filter definitions
-- `directory/utils.py` - Dynamic JSONB filtering logic
-- `directory/views.py` - Home, pSEO landing, and submission views
-- `directory/forms.py` - User submission form for crowdsourcing missing listings
-- `directory/tests/` - Django test modules
-- `directory/templates/` - Tailwind-styled templates with HTMX
-- `directory/management/commands/` - CLI tools for data maintenance
+The tests need a Postgres database. Start one with `docker-compose up db`, or rely on CI.
+
+## Environment variables
+
+Production values live in Vercel (`vercel env ls production`). The ✓ column shows what was set in production as of 2026-11-03.
+
+| Variable | Prod | Purpose |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | ✓ | Required unless `DJANGO_DEBUG=true` |
+| `DJANGO_DEBUG` | ✓ | `true` only for local development. Defaults to `false`. |
+| `DJANGO_ALLOWED_HOSTS` | ✓ | Comma-separated. Defaults to `localhost,127.0.0.1`. |
+| `CSRF_TRUSTED_ORIGINS` | ✓ | For example `https://saunaguide.ie,https://www.saunaguide.ie` |
+| `DATABASE_URL` | ✓ | Neon pooled connection string. When it's set, the `POSTGRES_*` variables are ignored. |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | | Local and Docker database only |
+| `GOOGLE_TAG_ID` | ✓ | GA4 measurement ID `G-M02JT3547M`. If it's missing, GA4 stops recording; this happened after the move to Vercel. |
+| `GOOGLE_ADS_ID` | | Google Ads tag. Defaults to `AW-17961593385`. |
+| `GOOGLE_ADSENSE_CLIENT` | ✓ | AdSense publisher ID |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | ✓ | Lead alerts by Telegram |
+| `EMAIL_BACKEND`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | ✓ | Lead alerts by email through Google Workspace SMTP. The password is a Workspace app password, which needs 2-Step Verification. |
+| `ADMIN_EMAIL`, `DEFAULT_FROM_EMAIL` | | Both default to `nigel@simplesitesolutions.ie` |
+| `STRIPE_ENABLED`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | ✗ | Not set yet. The webhook returns 503 until they are. |
+| `FEATURED_GRACE_DAYS` | | Days a listing stays featured after a failed payment. Default 7. |
+| `ENABLE_GOOGLE_PLACES_SYNC` | ✓ | Safety switch for the old Google Places commands. Keep it `false`. |
+| `MAP_PROVIDER`, `MAP_TILES_URL`, `MAP_DEFAULT_*` | | Optional map settings |
 
 ## Features
 
-### User Submission System
-Allow users to submit missing saunas via a web form at `/submit/`:
-- Public submission form with all sauna fields (location, amenities, contact info)
-- Status workflow: pending → approved/rejected
-- Admin interface with bulk approve/reject actions
-- Email notifications are not enabled by default
+### Listings and county pages
+- `Listing` (`directory/models.py`) stores amenities and opening hours in the `attributes` JSON field. Copied Google reviews are in `structured_data`.
+- Filters are defined in `directory/niche_config.py`. Attribute values are lowercase: `yes`, `no`, `not listed`, `wood`, `electric`, `infrared`.
+- County pages are served at `/<county-slug>/`. Featured listings sort first everywhere.
 
-**Admin workflow:**
-1. Users submit saunas at `/submit/`
-2. Review submissions at `/admin/directory/saunasubmission/`
-3. Approve or reject with bulk actions
-4. Approved submissions become regular listings
+### Lead capture: `/submit/` and `/get-featured/`
+- **Sauna submissions** are saved as `SaunaSubmission`. **Partner (get-featured) enquiries** are saved as `PartnerInquiry`, with a pipeline status of new, contacted, won or lost.
+- Both are saved before any alert goes out. Alerts go to Telegram and by email to `ADMIN_EMAIL`, with Reply-To set to the person who submitted. A failed alert never loses a lead; it's only logged.
+- Both forms have a hidden `fax` field as a spam trap. Submissions that fill it are thrown away silently.
+- In admin, select submissions and run **"Approve and create listings"** to create the `Listing`, with a unique slug and the amenities filled in. Opening hours have to be entered by hand because the formats differ.
 
-### Management Commands
+### Listing analytics (owner reports)
+These are the numbers behind the free trial and the monthly reports to featured owners.
 
-#### Add Individual Saunas
-Add saunas from Google Maps using the `add_sauna` command:
+- **Markup:** every listing card (`data-placement="card"`) and listing page (`data-placement="detail"`) carries `data-listing-id` and `data-listing-name`. Each outbound link has a `data-click-type`: `website`, `booking`, `social`, `phone`, `directions` or `review`. The type for website and booking links is worked out from the URL by `directory/links.py`.
+- **UTM tags:** website and booking links get `utm_source=saunaguide.ie&utm_medium=referral&utm_campaign=listing`, so owners see the traffic in their own analytics. Social links are left alone.
+- **First-party counts:** a small script in `base.html` sends batched beacons to `POST /t/`. They're stored as daily totals per listing in `ListingDailyStat` (listing, date, metric, count). The metrics are:
+  - `view`: the listing page was opened
+  - `impression`: the card was at least 50% visible, counted once per page load
+  - `click_<type>`: an outbound link was clicked.
 
-```bash
-# Using Docker
-docker-compose exec web python manage.py add_sauna --search "Sauna name"
-docker-compose exec web python manage.py add_sauna --url "https://maps.google.com/..."
-docker-compose exec web python manage.py add_sauna --place-id "ChIJ..."
+  Bots are ignored, and no IPs or cookies are stored. The stats are browsable read-only in admin.
+- **GA4:** the same script sends `listing_click` and `listing_view` events. Their parameters are registered as custom dimensions (`listing_id`, `listing_name`, `click_type`, `placement`), and `listing_click` is a key event.
+- **Monthly report:** this prints a CSV of views, impressions and each click type per listing, sorted by total clicks.
+  ```bash
+  python manage.py listing_report --month 2026-11 [--listing <slug>]
+  ```
+  Run it with `DATABASE_URL` set to Neon to report on production.
 
-# Using bash wrapper (easier)
-./add_sauna.sh --search "Sauna name"
-./add_sauna.sh --url "https://maps.google.com/..."
-```
-
-Features:
-- Fetches details from Google Maps Places API
-- Extracts amenities from reviews (wood/electric heat, cold plunge, etc.)
-- Gets opening hours, phone, website, ratings
-- Automatically formats data for database
-
-#### Verify Data Quality
-Check and fix listing data using the `verify_listings` command:
+### Managing GA4 from the command line
+GA4 is managed through a service account, so the GA4 interface isn't needed after setup:
+- service account: `ga-manager@saunaguide-analytics-1103.iam.gserviceaccount.com` (Google Cloud project `saunaguide-analytics-1103`)
+- access: Editor on the GA4 property; `nigelmcintyre1995@gmail.com` is allowed to act as it.
 
 ```bash
-# Check all listings (dry run)
-docker-compose exec web python manage.py verify_listings
-
-# Auto-fix errors
-docker-compose exec web python manage.py verify_listings --fix
-
-# Only verify counties
-docker-compose exec web python manage.py verify_listings --county-only --fix
-
-# Limit number of listings
-docker-compose exec web python manage.py verify_listings --limit 50
-
-# Using bash wrapper
-./verify_listings.sh --fix
-./verify_listings.sh --county-only --fix
+TOKEN=$(gcloud auth print-access-token \
+  --impersonate-service-account=ga-manager@saunaguide-analytics-1103.iam.gserviceaccount.com \
+  --scopes=https://www.googleapis.com/auth/analytics.edit,https://www.googleapis.com/auth/analytics.readonly)
+curl -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: saunaguide-analytics-1103" \
+  https://analyticsadmin.googleapis.com/v1beta/properties/531569261/customDimensions
 ```
 
-Verifies:
-- County names against Google Maps API
-- City names (optional)
-- Phone number formatting
-- Website URLs
+Use the Admin API (`analyticsadmin.googleapis.com`) for configuration and the Data API (`analyticsdata.googleapis.com`) for reports. Don't use `gcloud auth application-default login`: Google blocks its default client from the Analytics scopes.
 
-#### Auto-refresh Photo References (Cron)
-Refresh stale Google photo references automatically with a host-level cron job.
+### Featured listings (Stripe)
+Featured listings are billed as Stripe subscriptions, and webhooks keep `listing.is_featured` in sync. Onboarding is currently manual. Self-serve checkout with Payment Links and a claim-your-listing flow is next on the roadmap (item 3).
 
-1. Make the wrapper executable:
-   ```bash
-   chmod +x refresh_photo_refs.sh
-   ```
-
-2. Test it manually:
-   ```bash
-   ./refresh_photo_refs.sh --limit 10 --verbose
-   ```
-
-3. Add a cron entry (example: weekly on Sunday at 03:20):
-   ```bash
-   crontab -e
-   ```
-
-   Then add:
-   ```cron
-   20 3 * * 0 cd /opt/directory_factory && ./refresh_photo_refs.sh >> /opt/directory_factory/logs/cron.log 2>&1
-   ```
-
-What the wrapper does:
-- Runs `refresh_photo_refs` with `--dry-run` first to detect outdated refs.
-- Runs the real update only when outdated refs are found.
-- Uses a lock file to prevent overlapping runs.
-- Writes timestamped logs to `./logs/` by default (or a custom `--log-dir`).
-
-### Google Maps API Integration
-Requires a Google Maps API key with Places API enabled:
-
-1. Get API key from [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable Places API (New) and Places API
-3. Add to `.env` file:
-   ```bash
-   GOOGLE_MAPS_API_KEY=your_api_key_here
-   ```
-
-Used by:
-- `add_sauna` command - fetch place details
-- `verify_listings` command - verify location data
-- Review analysis - extract amenities from user reviews
-
-## Data Import
-
-Import listings from CSV:
-```bash
-docker-compose exec web python manage.py import_listings sample_data/sauna_listings_final.csv
-```
-
-CSV format (17 columns):
-- name, place_id, city, county, address
-- website, phone, rating, reviews
-- photo_ref, heat_source, cold_plunge, dog_friendly
-- showers, changing_facilities, sea_view, opening_hours
-
-**Note:** All attribute values should be lowercase: `yes`, `no`, `not listed`, `wood`, `electric`, `infrared`
-
-## Configuration
-
-### Environment Variables
-Required:
-- `POSTGRES_DB` - Database name
-- `POSTGRES_USER` - Database user
-- `POSTGRES_PASSWORD` - Database password
-- `POSTGRES_HOST` - Database host (localhost or db for Docker)
-- `POSTGRES_PORT` - Database port (default: 5432)
-- `GOOGLE_MAPS_API_KEY` - For Places API features
-
-Optional:
-- `DJANGO_DEBUG` - Set to `true` for local development (default: false)
-- `DJANGO_SECRET_KEY` - Required unless `DJANGO_DEBUG=true`
-- `STRIPE_ENABLED` - Set to `true` to activate the Stripe webhook (default: false)
-- `STRIPE_SECRET_KEY` - Stripe API secret key
-- `STRIPE_WEBHOOK_SECRET` - Endpoint signing secret from Stripe Dashboard
-- `FEATURED_GRACE_DAYS` - Days to keep a listing featured after a failed payment (default: 7)
-
-### Filter Configuration
-Edit `directory/niche_config.py` to customize:
-- Site metadata (name, tagline, description)
-- Filter options and labels
-- Attribute choices (must match data format)
-
-**Important:** Use lowercase values: `"yes"`, `"no"`, `"not listed"`
-
-## Production Deployment
-
-See [setup-droplet.sh](setup-droplet.sh) for automated deployment script.
-
-Manual steps:
-1. Clone repository on server
-2. Configure environment variables in `.env`
-3. Run migrations: `docker-compose -f docker-compose.prod.yml run web python manage.py migrate`
-4. Import data: `docker-compose -f docker-compose.prod.yml exec web python manage.py import_listings sample_data/sauna_listings_final.csv`
-5. Start services: `docker-compose -f docker-compose.prod.yml up -d`
-
-## Development Workflow
-
-### Adding New Saunas
-1. Use `add_sauna.sh` script for individual additions
-2. Or accept user submissions via `/submit/` form
-3. Verify data quality with `verify_listings.sh --fix`
-
-### Maintaining Data Quality
-Run periodic checks:
-```bash
-# Weekly: verify county data
-./verify_listings.sh --county-only --fix
-
-# Monthly: full verification
-./verify_listings.sh --fix
-```
-
-### Updating Listings
-1. Edit in Django admin at `/admin/directory/listing/`
-2. Or update CSV and re-import
-3. Run verification to ensure consistency
-
-## Featured Listings (Stripe)
-
-Featured listings are billed via Stripe subscriptions. Onboarding is currently manual:
-
-1. Create the customer + subscription in the Stripe Dashboard.
-2. In Django admin, open the listing and add a `Featured Listing Subscription` inline record with the `stripe_subscription_id`.
-3. With `STRIPE_ENABLED=true` and a configured webhook, status changes are auto-applied to `listing.is_featured`.
+1. Create the customer and subscription in the Stripe Dashboard.
+2. In admin, open the listing and add a `Featured Listing Subscription` inline with the `stripe_subscription_id`.
+3. With `STRIPE_ENABLED=true` and the webhook set up, status changes are applied to `listing.is_featured` automatically.
 
 **Webhook endpoint:** `POST /billing/stripe/webhook/`
 
-**Stripe events to subscribe to:**
-- `customer.subscription.created`
-- `customer.subscription.updated`
-- `customer.subscription.deleted`
-- `invoice.paid`
-- `invoice.payment_failed`
+**Stripe events to subscribe to:** `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
 
-**Behavior:**
-- `active` or `trialing` -> `is_featured = True`
-- `invoice.payment_failed` -> grace window of `FEATURED_GRACE_DAYS` days; listing stays featured during grace
-- `invoice.paid` -> grace cleared
-- `canceled` / `unpaid` past the grace window -> `is_featured = False`
-- Duplicate webhook deliveries are ignored via the `StripeWebhookEvent` table
-- Set `auto_manage_featured = False` on a subscription to override and pin the flag manually
+**Behaviour:**
+- `active` or `trialing` sets `is_featured = True`.
+- `invoice.payment_failed` starts a grace period of `FEATURED_GRACE_DAYS`, during which the listing stays featured.
+- `invoice.paid` clears the grace period.
+- `canceled` or `unpaid` after the grace period sets `is_featured = False`.
+- Duplicate webhook deliveries are ignored using the `StripeWebhookEvent` table.
+- Setting `auto_manage_featured = False` on a subscription lets you set the flag by hand.
+
+## Data quality audit
+
+This produces a read-only report of listings missing a website of their own, a phone number, a photo or opening hours:
+```bash
+psql "$DATABASE_URL" --csv -f scripts/listing_data_quality.sql > listing_data_quality.csv
+python3 scripts/add_ga_columns.py listing_data_quality.csv analytics_data > listing_data_quality_ga.csv
+```
+
+`website_type` classifies each listing's link as `own_site`, `none`, `social`, `link_hub`, `booking_platform`, `google` or `dev_url`. The second command adds GA4 page views and outbound clicks from exported GA4 CSVs.
+
+## Management commands
+
+| Command | Status | Purpose |
+|---|---|---|
+| `listing_report` | Active | Monthly per-listing stats CSV (see above) |
+| `import_listings <csv>` | Active | Import listings from CSV |
+| `import_google_places <csv>` | Active | Import a Google Places CSV export |
+| `geocode_listings_osm` | Active | Fill latitude and longitude from addresses using OpenStreetMap Nominatim |
+| `generate_pages` | Active | Show which county pages have enough listings |
+| `add_sauna`, `verify_listings`, `refresh_photo_refs`, `download_photos`, `fetch_google_reviews`, `geocode_place_ids` | Disabled | Old Google Places API commands, now stubs. Their `.sh` wrappers no longer do anything. |
+
+## Project structure
+- `directory/models.py`: `Listing`, `ListingDailyStat`, `SaunaSubmission`, `PartnerInquiry`, `FeaturedListingSubscription`, `StripeWebhookEvent`
+- `directory/views.py`: home, county pages, listing page, submit, get-featured, the `/t/` beacon and the Stripe webhook
+- `directory/links.py`: outbound link classification and UTM tagging, exposed to templates through `templatetags/listing_links.py`
+- `directory/utils.py`: JSONB filtering and pagination
+- `directory/schema.py`: structured data (JSON-LD) builders
+- `directory/niche_config.py`: site name, domain and filter definitions
+- `directory/templates/`: Tailwind and HTMX templates. The analytics script lives in `base.html`.
+- `directory/tests/`: Django tests
+- `blog/`: markdown blog posts
+- `scripts/`: read-only data audit tools
