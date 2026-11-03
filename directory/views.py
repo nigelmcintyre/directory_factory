@@ -2,6 +2,7 @@ import json
 import logging
 import urllib.parse
 import urllib.request
+from collections import Counter
 from urllib.parse import urlencode
 from datetime import datetime, timezone as dt_timezone, timedelta
 from django.utils.text import slugify
@@ -14,7 +15,14 @@ from django.contrib import messages
 from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from .models import Listing, FeaturedListingSubscription, PartnerInquiry, StripeWebhookEvent
+from django.views.decorators.http import require_POST
+from .models import (
+    FeaturedListingSubscription,
+    Listing,
+    ListingDailyStat,
+    PartnerInquiry,
+    StripeWebhookEvent,
+)
 from .forms import HONEYPOT_FIELD, SaunaSubmissionForm, PartnerInquiryForm
 from .niche_config import SITE_NAME, DOMAIN, FILTERS
 from .utils import get_filtered_listings, paginate_listings
@@ -181,6 +189,40 @@ def stripe_webhook(request: HttpRequest) -> HttpResponse:
                 _sync_featured_flag(record)
 
     return JsonResponse({"ok": True})
+
+
+TRACKED_METRICS = {metric for metric, _ in ListingDailyStat.METRIC_CHOICES}
+BOT_MARKERS = ("bot", "crawl", "spider", "slurp", "headless", "lighthouse", "preview")
+MAX_EVENTS_PER_BEACON = 50
+
+
+@csrf_exempt
+@require_POST
+def track_listing_events(request: HttpRequest) -> HttpResponse:
+    """Beacon endpoint for listing views, card impressions and outbound clicks."""
+    user_agent = request.headers.get("User-Agent", "").lower()
+    if not user_agent or any(marker in user_agent for marker in BOT_MARKERS):
+        return HttpResponse(status=204)
+
+    try:
+        events = json.loads(request.body)["events"][:MAX_EVENTS_PER_BEACON]
+        counts = Counter(
+            (int(event["listing_id"]), event["metric"])
+            for event in events
+            if event["metric"] in TRACKED_METRICS
+        )
+    except (ValueError, KeyError, TypeError):
+        return HttpResponse(status=400)
+
+    active_ids = set(
+        Listing.objects.filter(id__in={listing_id for listing_id, _ in counts}, is_active=True)
+        .values_list("id", flat=True)
+    )
+    today = timezone.now().date()
+    for (listing_id, metric), amount in counts.items():
+        if listing_id in active_ids:
+            ListingDailyStat.increment(listing_id, today, metric, amount)
+    return HttpResponse(status=204)
 
 
 def robots_txt(request: HttpRequest) -> HttpResponse:
@@ -535,7 +577,7 @@ def get_featured(request: HttpRequest) -> HttpResponse:
             if not form.cleaned_data[HONEYPOT_FIELD]:
                 data = {key: value for key, value in form.cleaned_data.items() if key != HONEYPOT_FIELD}
                 inquiry = PartnerInquiry.objects.create(**data)
-                tier_label = dict(form.fields['tier_interest'].choices).get(inquiry.tier_interest)
+                tier_label = dict(form.fields['tier_interest'].choices).get(inquiry.tier_interest, inquiry.tier_interest)
                 _notify_admin(
                     "New Partner Inquiry",
                     [

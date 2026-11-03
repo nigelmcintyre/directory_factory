@@ -1,5 +1,5 @@
-{% load dict_extras %}
-<article class="group relative rounded-2xl border {% if listing.is_featured %}border-yellow-400 bg-gradient-to-br from-yellow-50 via-white to-white shadow-2xl shadow-yellow-500/20 ring-2 ring-yellow-400/50{% else %}border-slate-200 bg-white shadow-md{% endif %} p-6 hover:shadow-xl transition-all duration-300 {% if not listing.is_featured %}hover:border-primary/30{% endif %}">
+{% load dict_extras listing_links %}
+<article data-listing-id="{{ listing.id }}" data-listing-name="{{ listing.name }}" data-placement="card" class="group relative rounded-2xl border {% if listing.is_featured %}border-yellow-400 bg-gradient-to-br from-yellow-50 via-white to-white shadow-2xl shadow-yellow-500/20 ring-2 ring-yellow-400/50{% else %}border-slate-200 bg-white shadow-md{% endif %} p-6 hover:shadow-xl transition-all duration-300 {% if not listing.is_featured %}hover:border-primary/30{% endif %}">
     {% if listing.is_featured %}
         <div class="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase shadow-lg flex items-center gap-1.5 z-20 ring-2 ring-white">
             <span class="text-sm">⭐</span>
@@ -80,13 +80,13 @@
                 View Details
             </a>
             {% if listing.website %}
-                <a href="{{ listing.website }}" target="_blank" rel="noopener noreferrer" 
+                <a href="{{ listing.website|with_utm }}" target="_blank" rel="noopener noreferrer" data-click-type="{{ listing.website|link_type }}"
                    class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-white text-sm font-semibold hover:shadow-lg transition-all hover:scale-[1.02]">
                     🌐 Visit Website
                 </a>
             {% endif %}
             {% if listing.phone %}
-                <a href="tel:{{ listing.phone }}" 
+                <a href="tel:{{ listing.phone }}" data-click-type="phone"
                    class="{% if listing.website %}flex-none{% else %}flex-1{% endif %} inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-primary text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-all">
                     📞 {% if not listing.website %}Call{% endif %}
                 </a>

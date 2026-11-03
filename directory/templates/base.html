@@ -160,5 +160,90 @@
             });
         })();
     </script>
+    <script>
+        // Per-listing views, card impressions and outbound clicks, for owner reports.
+        (function () {
+            var queue = [];
+            var flushTimer = null;
+            var impressed = {};
+
+            var flush = function () {
+                clearTimeout(flushTimer);
+                flushTimer = null;
+                if (!queue.length || !navigator.sendBeacon) {
+                    return;
+                }
+                // A plain string is sent as text/plain, which every browser allows in a beacon.
+                navigator.sendBeacon("{% url 'track_listing_events' %}", JSON.stringify({events: queue}));
+                queue = [];
+            };
+
+            var record = function (listingId, metric) {
+                queue.push({listing_id: Number(listingId), metric: metric});
+                if (!flushTimer) {
+                    flushTimer = setTimeout(flush, 2000);
+                }
+            };
+
+            var sendGaEvent = function (name, listing, params) {
+                if (typeof gtag !== "function") {
+                    return;
+                }
+                gtag("event", name, Object.assign({
+                    listing_id: listing.dataset.listingId,
+                    listing_name: listing.dataset.listingName,
+                    placement: listing.dataset.placement
+                }, params));
+            };
+
+            document.addEventListener("click", function (event) {
+                var link = event.target.closest("[data-click-type]");
+                var listing = link && link.closest("[data-listing-id]");
+                if (!listing) {
+                    return;
+                }
+                record(listing.dataset.listingId, "click_" + link.dataset.clickType);
+                flush();
+                sendGaEvent("listing_click", listing, {click_type: link.dataset.clickType, link_url: link.href});
+            });
+
+            var observer = "IntersectionObserver" in window && new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+                    observer.unobserve(entry.target);
+                    var listingId = entry.target.dataset.listingId;
+                    if (!impressed[listingId]) {
+                        impressed[listingId] = true;
+                        record(listingId, "impression");
+                    }
+                });
+            }, {threshold: 0.5});
+
+            var observeCards = function () {
+                if (!observer) {
+                    return;
+                }
+                document.querySelectorAll('[data-placement="card"]:not([data-observed])').forEach(function (card) {
+                    card.dataset.observed = "true";
+                    observer.observe(card);
+                });
+            };
+
+            var detail = document.querySelector('[data-placement="detail"]');
+            if (detail) {
+                record(detail.dataset.listingId, "view");
+                sendGaEvent("listing_view", detail, {});
+            }
+            observeCards();
+            document.body.addEventListener("htmx:afterSettle", observeCards);
+            document.addEventListener("visibilitychange", function () {
+                if (document.visibilityState === "hidden") {
+                    flush();
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

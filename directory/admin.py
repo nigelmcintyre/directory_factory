@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.text import slugify
-from .models import FeaturedListingSubscription, Listing, PartnerInquiry, SaunaSubmission
+from .models import FeaturedListingSubscription, Listing, ListingDailyStat, PartnerInquiry, SaunaSubmission
 
 SUBMISSION_ATTRIBUTES = ["heat_source", "cold_plunge", "dog_friendly", "showers", "changing_facilities", "sea_view"]
 
@@ -127,3 +127,18 @@ class PartnerInquiryAdmin(admin.ModelAdmin):
     search_fields = ("sauna_name", "contact_name", "contact_email")
     list_editable = ("status",)
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(ListingDailyStat)
+class ListingDailyStatAdmin(admin.ModelAdmin):
+    list_display = ("listing", "date", "metric", "count")
+    list_filter = ("metric", "date")
+    search_fields = ("listing__name",)
+    date_hierarchy = "date"
+    list_select_related = ("listing",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

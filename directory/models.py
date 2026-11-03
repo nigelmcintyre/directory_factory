@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import IntegrityError, models, transaction
 from django.utils.text import slugify
 from django.utils import timezone
 
@@ -34,6 +34,46 @@ class Listing(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class ListingDailyStat(models.Model):
+    """Aggregate per-listing counts; no IPs or cookies, so no personal data."""
+
+    METRIC_CHOICES = [
+        ("view", "Detail page view"),
+        ("impression", "Card impression"),
+        ("click_website", "Website click"),
+        ("click_booking", "Booking click"),
+        ("click_social", "Social click"),
+        ("click_phone", "Phone click"),
+        ("click_directions", "Directions click"),
+        ("click_review", "Review click"),
+    ]
+
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="daily_stats")
+    date = models.DateField()
+    metric = models.CharField(max_length=32, choices=METRIC_CHOICES)
+    count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["listing", "date", "metric"], name="unique_listing_daily_metric"),
+        ]
+        indexes = [models.Index(fields=["date"])]
+
+    def __str__(self) -> str:
+        return f"{self.listing_id} {self.date} {self.metric}={self.count}"
+
+    @classmethod
+    def increment(cls, listing_id: int, date, metric: str, amount: int = 1) -> None:
+        row = cls.objects.filter(listing_id=listing_id, date=date, metric=metric)
+        if row.update(count=models.F("count") + amount):
+            return
+        try:
+            with transaction.atomic():
+                cls.objects.create(listing_id=listing_id, date=date, metric=metric, count=amount)
+        except IntegrityError:
+            row.update(count=models.F("count") + amount)
 
 
 class SaunaSubmission(models.Model):
