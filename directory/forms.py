@@ -20,8 +20,20 @@ SELECT_INPUT_CLASSES = (
 
 SELECT_INPUT_STYLE = '-webkit-appearance: menulist; appearance: auto;'
 
+HONEYPOT_FIELD = 'fax'
+
+
+def honeypot_field():
+    # Rendered off-screen; humans leave it empty, form-filling bots don't.
+    return forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'tabindex': '-1', 'autocomplete': 'off'}),
+    )
+
 
 class SaunaSubmissionForm(forms.ModelForm):
+    fax = honeypot_field()
+
     class Meta:
         model = SaunaSubmission
         fields = [
@@ -151,7 +163,8 @@ class SaunaSubmissionForm(forms.ModelForm):
 
 class PartnerInquiryForm(forms.Form):
     """Form for contacting about featured listing / partner programs"""
-    
+
+    fax = honeypot_field()
     sauna_name = forms.CharField(
         max_length=255,
         required=True,

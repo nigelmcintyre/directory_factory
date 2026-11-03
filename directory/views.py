@@ -1,24 +1,69 @@
 import json
-import os
+import logging
+import urllib.parse
+import urllib.request
 from urllib.parse import urlencode
 from datetime import datetime, timezone as dt_timezone, timedelta
 from django.utils.text import slugify
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.contrib import messages
+from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from .models import Listing, FeaturedListingSubscription, StripeWebhookEvent
-from .forms import SaunaSubmissionForm, PartnerInquiryForm
+from .models import Listing, FeaturedListingSubscription, PartnerInquiry, StripeWebhookEvent
+from .forms import HONEYPOT_FIELD, SaunaSubmissionForm, PartnerInquiryForm
 from .niche_config import SITE_NAME, DOMAIN, FILTERS
 from .utils import get_filtered_listings, paginate_listings
 from .schema import generate_breadcrumb_schema, generate_listing_schema
 
+logger = logging.getLogger(__name__)
+
 
 def _is_htmx(request: HttpRequest) -> bool:
     return request.headers.get("HX-Request", "false").lower() == "true"
+
+
+def _send_telegram(text: str) -> None:
+    """Best-effort admin alert. Callers must persist data first; this never raises."""
+    token = settings.TELEGRAM_BOT_TOKEN
+    chat_id = settings.TELEGRAM_CHAT_ID
+    if not token or not chat_id:
+        logger.warning("Telegram not configured; alert not sent")
+        return
+    payload = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "HTML"}).encode()
+    request = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=payload,
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(request, timeout=10)
+    except Exception:
+        logger.exception("Telegram alert failed")
+
+
+def _send_admin_email(subject: str, body: str, reply_to: list[str]) -> None:
+    try:
+        EmailMessage(subject, body, to=[settings.ADMIN_EMAIL], reply_to=reply_to).send()
+    except Exception:
+        logger.exception("Admin email failed")
+
+
+def _notify_admin(title: str, fields: list[tuple[str, str]], admin_path: str, reply_to: str) -> None:
+    """Best-effort Telegram + email alert. Callers must persist data first."""
+    admin_url = f"https://{DOMAIN}{admin_path}"
+    telegram_lines = [f"<b>{title}</b>", ""]
+    telegram_lines += [f"<b>{label}:</b> {escape(value or '-')}" for label, value in fields]
+    telegram_lines += ["", f'<a href="{admin_url}">Open in admin</a>']
+    _send_telegram("\n".join(telegram_lines))
+
+    email_lines = [f"{label}: {value or '-'}" for label, value in fields]
+    email_lines += ["", f"Open in admin: {admin_url}"]
+    _send_admin_email(f"[{SITE_NAME}] {title}", "\n".join(email_lines), [reply_to])
 
 
 def _to_datetime(timestamp):
@@ -431,7 +476,20 @@ def submit_sauna(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         form = SaunaSubmissionForm(request.POST)
         if form.is_valid():
+            if form.cleaned_data[HONEYPOT_FIELD]:
+                return redirect('submit_success')
             submission = form.save()
+            _notify_admin(
+                "New Sauna Submission",
+                [
+                    ("Sauna", submission.name),
+                    ("Location", f"{submission.city}, {submission.county}"),
+                    ("Website", submission.website),
+                    ("Submitted by", f"{submission.submitter_name} <{submission.submitter_email}>"),
+                ],
+                f"/admin/directory/saunasubmission/{submission.pk}/change/",
+                reply_to=submission.submitter_email,
+            )
             messages.success(
                 request,
                 "Thank you! Your sauna submission has been received and will be reviewed shortly."
@@ -471,54 +529,31 @@ def submit_success(request: HttpRequest) -> HttpResponse:
 
 def get_featured(request: HttpRequest) -> HttpResponse:
     """Partner program page - featured listing inquiry form"""
-    import urllib.request
-    import urllib.parse
-    import json
-
-    def send_telegram(text: str) -> None:
-        token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-        chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
-        if not token or not chat_id:
-            return
-        payload = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "HTML"}).encode()
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data=payload,
-            method="POST",
-        )
-        urllib.request.urlopen(req, timeout=10)
-
     if request.method == 'POST':
         form = PartnerInquiryForm(request.POST)
         if form.is_valid():
-            tier_label = dict(form.fields['tier_interest'].choices).get(
-                form.cleaned_data['tier_interest'], form.cleaned_data['tier_interest']
-            )
-            telegram_message = (
-                f"<b>New Partner Inquiry</b>\n\n"
-                f"<b>Sauna:</b> {form.cleaned_data['sauna_name']}\n"
-                f"<b>Contact:</b> {form.cleaned_data['contact_name']}\n"
-                f"<b>Email:</b> {form.cleaned_data['contact_email']}\n"
-                f"<b>Phone:</b> {form.cleaned_data.get('phone') or 'Not provided'}\n"
-                f"<b>Tier:</b> {tier_label}\n\n"
-                f"<b>Message:</b>\n{form.cleaned_data.get('message') or 'None'}\n\n"
-                f"<a href=\"https://{DOMAIN}{request.path}\">Get Featured page</a>"
-            )
-
-            try:
-                send_telegram(telegram_message)
-                messages.success(
-                    request,
-                    "Thank you! We've received your inquiry and will be in touch as soon as possible."
+            if not form.cleaned_data[HONEYPOT_FIELD]:
+                data = {key: value for key, value in form.cleaned_data.items() if key != HONEYPOT_FIELD}
+                inquiry = PartnerInquiry.objects.create(**data)
+                tier_label = dict(form.fields['tier_interest'].choices).get(inquiry.tier_interest)
+                _notify_admin(
+                    "New Partner Inquiry",
+                    [
+                        ("Sauna", inquiry.sauna_name),
+                        ("Contact", inquiry.contact_name),
+                        ("Email", inquiry.contact_email),
+                        ("Phone", inquiry.phone),
+                        ("Tier", tier_label),
+                        ("Message", inquiry.message),
+                    ],
+                    f"/admin/directory/partnerinquiry/{inquiry.pk}/change/",
+                    reply_to=inquiry.contact_email,
                 )
-            except Exception as e:
-                messages.error(
-                    request,
-                    "We received your inquiry, but there was an issue sending our confirmation. We'll still follow up shortly."
-                )
-            
-            # Reset form after successful submission
-            form = PartnerInquiryForm()
+            messages.success(
+                request,
+                "Thank you! We've received your inquiry and will be in touch as soon as possible."
+            )
+            return redirect('get_featured')
     else:
         form = PartnerInquiryForm()
     

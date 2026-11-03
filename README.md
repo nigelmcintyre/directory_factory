@@ -296,8 +296,8 @@ Required:
 - `GOOGLE_MAPS_API_KEY` - For Places API features
 
 Optional:
-- `DJANGO_DEBUG` - Debug mode (default: true)
-- `DJANGO_SECRET_KEY` - Secret key for production
+- `DJANGO_DEBUG` - Set to `true` for local development (default: false)
+- `DJANGO_SECRET_KEY` - Required unless `DJANGO_DEBUG=true`
 - `STRIPE_ENABLED` - Set to `true` to activate the Stripe webhook (default: false)
 - `STRIPE_SECRET_KEY` - Stripe API secret key
 - `STRIPE_WEBHOOK_SECRET` - Endpoint signing secret from Stripe Dashboard

@@ -114,6 +114,7 @@
 
         <form method="post" class="space-y-6">
             {% csrf_token %}
+            <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.fax }}</div>
 
             <!-- Sauna Name & Contact Name -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
