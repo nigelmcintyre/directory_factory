@@ -22,6 +22,9 @@ CSRF_TRUSTED_ORIGINS = [origin for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "
 # Vercel terminates TLS; without this, sitemaps and other absolute URLs are built as http://.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# OSM tile servers block requests without a Referer; Django's default "same-origin" strips it.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -118,7 +121,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 ENABLE_GOOGLE_PLACES_SYNC = os.getenv("ENABLE_GOOGLE_PLACES_SYNC", "false").lower() == "true"
 
 MAP_PROVIDER = os.getenv("MAP_PROVIDER", "leaflet")
-MAP_TILES_URL = os.getenv("MAP_TILES_URL", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+MAP_TILES_URL = os.getenv("MAP_TILES_URL", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
 MAP_TILES_ATTRIBUTION = os.getenv("MAP_TILES_ATTRIBUTION", "&copy; OpenStreetMap contributors")
 MAP_DEFAULT_CENTER_LAT = float(os.getenv("MAP_DEFAULT_CENTER_LAT", "53.1424"))
 MAP_DEFAULT_CENTER_LNG = float(os.getenv("MAP_DEFAULT_CENTER_LNG", "-7.6921"))

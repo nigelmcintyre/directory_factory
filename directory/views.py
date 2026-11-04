@@ -321,7 +321,7 @@ def home(request: HttpRequest) -> HttpResponse:
         "map_tiles_url": getattr(
             settings,
             "MAP_TILES_URL",
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         ),
         "map_tiles_attribution": getattr(
             settings,
