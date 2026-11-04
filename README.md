@@ -65,7 +65,7 @@ Production values live in Vercel (`vercel env ls production`). The ✓ column sh
 | `CSRF_TRUSTED_ORIGINS` | ✓ | For example `https://saunaguide.ie,https://www.saunaguide.ie` |
 | `DATABASE_URL` | ✓ | Neon pooled connection string. When it's set, the `POSTGRES_*` variables are ignored. |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | | Local and Docker database only |
-| `GOOGLE_TAG_ID` | ✓ | GA4 measurement ID `G-M02JT3547M`. If it's missing, GA4 stops recording; this happened after the move to Vercel. |
+| `GOOGLE_TAG_ID` | ✓ | GA4 measurement ID `G-M02JT3547M`. The Google Ads tag is a combined Google tag that also sends to GA4, so GA4 keeps recording even without this variable. |
 | `GOOGLE_ADS_ID` | | Google Ads tag. Defaults to `AW-17961593385`. |
 | `GOOGLE_ADSENSE_CLIENT` | ✓ | AdSense publisher ID |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | ✓ | Lead alerts by Telegram |
@@ -101,6 +101,7 @@ These are the numbers behind the free trial and the monthly reports to featured 
 
   Bots are ignored, and no IPs or cookies are stored. The stats are browsable read-only in admin.
 - **GA4:** the same script sends `listing_click` and `listing_view` events. Their parameters are registered as custom dimensions (`listing_id`, `listing_name`, `click_type`, `placement`), and `listing_click` is a key event.
+- **Which numbers to trust:** Google's consent message (set up in AdSense "Privacy & messaging") means GA4 only records visitors who accept cookies. The first-party counts include everyone, so use `ListingDailyStat` and `listing_report` for owner reports, and treat GA4 as a lower bound.
 - **Monthly report:** this prints a CSV of views, impressions and each click type per listing, sorted by total clicks.
   ```bash
   python manage.py listing_report --month 2026-11 [--listing <slug>]
