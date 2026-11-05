@@ -6,10 +6,10 @@
             <span>Featured</span>
         </div>
     {% endif %}
-    {% if listing.photo_data %}
+    {% if listing.has_photo %}
         <a href="{% url 'listing_detail' listing.slug %}" class="block mb-4">
             <img
-                src="data:image/webp;base64,{{ listing.photo_data }}"
+                src="{% url 'listing_photo' listing.slug %}?v={{ listing.updated_at|date:'U' }}"
                 alt="{{ listing.name }} - {% if listing.attributes.heat_source %}{{ listing.attributes.heat_source }} sauna{% else %}sauna{% endif %} in {% firstof listing.county listing.city %}{% if listing.attributes.sea_view == 'yes' %} with sea view{% endif %}{% if listing.attributes.cold_plunge == 'yes' %} and cold plunge{% endif %}"
                 class="w-full h-48 object-cover rounded-xl"
                 loading="lazy"

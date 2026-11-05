@@ -3,6 +3,18 @@ from django.utils.text import slugify
 from django.utils import timezone
 
 
+class ListingManager(models.Manager):
+    # photo_data is ~150 KB of base64 per row and every byte read from Neon is billed egress,
+    # so it's only loaded by the photo view (or lazily on direct attribute access).
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .defer("photo_data")
+            .annotate(has_photo=models.ExpressionWrapper(~models.Q(photo_data=""), output_field=models.BooleanField()))
+        )
+
+
 class Listing(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
@@ -25,6 +37,8 @@ class Listing(models.Model):
     is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = ListingManager()
 
     class Meta:
         indexes = [

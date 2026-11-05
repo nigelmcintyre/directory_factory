@@ -71,9 +71,9 @@
 <div class="grid gap-8 lg:grid-cols-[2fr_1fr]">
     <section class="space-y-6">
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
-            {% if listing.photo_data %}
+            {% if listing.has_photo %}
                 <img
-                    src="data:image/webp;base64,{{ listing.photo_data }}"
+                    src="{% url 'listing_photo' listing.slug %}?v={{ listing.updated_at|date:'U' }}"
                     alt="{{ listing.name }} - {% if listing.attributes.heat_source %}{{ listing.attributes.heat_source }} sauna{% else %}sauna facility{% endif %} in {% firstof listing.county listing.city %}, Ireland{% if listing.attributes.sea_view == 'yes' %} with sea view{% endif %}{% if listing.attributes.cold_plunge == 'yes' %} and cold plunge pool{% endif %}{% if listing.rating %} - Rated {{ listing.rating }} stars{% endif %}"
                     class="w-full h-80 object-cover rounded-xl mb-6"
                     loading="eager"
@@ -290,10 +290,10 @@
     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {% for related in related_listings %}
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:border-primary/30">
-            {% if related.photo_data %}
+            {% if related.has_photo %}
                 <a href="{% url 'listing_detail' related.slug %}" class="block mb-3">
                     <img
-                        src="data:image/webp;base64,{{ related.photo_data }}"
+                        src="{% url 'listing_photo' related.slug %}?v={{ related.updated_at|date:'U' }}"
                         alt="{{ related.name }} in {% firstof related.county related.city %}"
                         class="w-full h-32 object-cover rounded-xl"
                         loading="lazy"

@@ -10,5 +10,6 @@ urlpatterns = [
     path("submit/success/", views.submit_success, name="submit_success"),
     path("get-featured/", views.get_featured, name="get_featured"),
     path("listing/<slug:slug>/", views.listing_detail, name="listing_detail"),
+    path("photo/<slug:slug>.webp", views.listing_photo, name="listing_photo"),
     path("<slug:county>/", views.pseo_landing, name="pseo_landing"),
 ]

@@ -607,9 +607,6 @@
                 const distanceText = listing.distance_km ? ` (${listing.distance_km} km)` : "";
                 const location = listing.location || listing.county || listing.city || "";
                 marker.bindPopup(`<strong>${listing.name}</strong><br/>${location}${distanceText}<br/>
-                    ${listing.photo_data ?
-                        `<img src="data:image/webp;base64,${listing.photo_data}" style="max-width:200px;max-height:150px;" alt="${listing.name}"/>` :
-                        ''}<br/>
                     <a href="${listing.url}">View Details</a>`);
                 mapState.markers.push(marker);
                 bounds.push([listing.lat, listing.lng]);

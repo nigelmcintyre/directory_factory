@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import urllib.parse
@@ -8,7 +9,7 @@ from datetime import datetime, timezone as dt_timezone, timedelta
 from django.utils.text import slugify
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render, redirect
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.contrib import messages
@@ -429,6 +430,19 @@ def pseo_landing(request: HttpRequest, county: str) -> HttpResponse:
         return render(request, "partials/listing_results.html", context)
 
     return render(request, "pseo_landing.html", context)
+
+
+def listing_photo(request: HttpRequest, slug: str) -> HttpResponse:
+    photo_data = (
+        Listing.objects.filter(slug=slug, is_active=True).exclude(photo_data="")
+        .values_list("photo_data", flat=True).first()
+    )
+    if photo_data is None:
+        raise Http404
+    response = HttpResponse(base64.b64decode(photo_data), content_type="image/webp")
+    # URLs carry ?v=<updated_at>, so a changed photo gets a new URL and the long CDN cache is safe.
+    response["Cache-Control"] = "public, max-age=86400, s-maxage=31536000, immutable"
+    return response
 
 
 def listing_detail(request: HttpRequest, slug: str) -> HttpResponse:
