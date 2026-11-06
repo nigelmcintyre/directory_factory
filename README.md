@@ -65,7 +65,7 @@ Production values live in Vercel (`vercel env ls production`). The ✓ column sh
 | `CSRF_TRUSTED_ORIGINS` | ✓ | For example `https://saunaguide.ie,https://www.saunaguide.ie` |
 | `DATABASE_URL` | ✓ | Neon pooled connection string. When it's set, the `POSTGRES_*` variables are ignored. |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | | Local and Docker database only |
-| `GOOGLE_TAG_ID` | ✓ | GA4 measurement ID `G-M02JT3547M`. The Google Ads tag is a combined Google tag that also sends to GA4, so GA4 keeps recording even without this variable. |
+| `GOOGLE_TAG_ID` | | **Leave unset.** GA4 (`G-M02JT3547M`) receives data through the Google Ads tag, which is a combined Google tag. Setting this variable on 2026-11-03 made GA4 stop recording, so it was removed on 2026-11-06. |
 | `GOOGLE_ADS_ID` | | Google Ads tag. Defaults to `AW-17961593385`. |
 | `GOOGLE_ADSENSE_CLIENT` | ✓ | AdSense publisher ID |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | ✓ | Lead alerts by Telegram |
