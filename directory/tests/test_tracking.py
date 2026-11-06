@@ -28,6 +28,8 @@ class LinkTests(SimpleTestCase):
         self.assertEqual(link_type("https://hylosaunasbooking.as.me/"), "booking")
         self.assertEqual(link_type("https://lakesidesaunas.simplybook.it/v2/"), "booking")
         self.assertEqual(link_type("http://buk.ie/twr"), "booking")
+        self.assertEqual(link_type("https://link.wunderbook.com/tenant?tenantName=Wonky_Sauna_Howth"), "booking")
+        self.assertEqual(link_type("https://fadsaoil.app/clontarf"), "booking")
         self.assertEqual(link_type("https://thehotboxsauna.ie/"), "website")
 
     def test_with_utm_preserves_query_and_fragment(self):

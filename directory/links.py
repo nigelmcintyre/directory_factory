@@ -5,8 +5,9 @@ CLICK_TYPES = ["website", "booking", "social", "phone", "directions", "review"]
 
 SOCIAL_HOSTS = re.compile(r"(^|\.)(instagram\.com|facebook\.com|fb\.com|tiktok\.com|linktr\.ee)$")
 BOOKING_HOSTS = re.compile(
-    r"(^|\.)(calendly\.com|as\.me|bookwhen\.com|wunderbook\.(app|link)|fresha\.com|setmore\.com|buk\.ie"
-    r"|booksy\.com|gettimely\.com|bookeo\.com|checkfront\.com|simplybook\.\w+|eventbrite\.\w+)$"
+    r"(^|\.)(calendly\.com|as\.me|acuityscheduling\.com|bookwhen\.com|wunderbook\.(app|link|com)|fresha\.com"
+    r"|setmore\.com|buk\.ie|booksy\.com|gettimely\.com|bookeo\.com|checkfront\.com|simplybook\.\w+|eventbrite\.\w+"
+    r"|easyweek\.ie|rezgo\.com|fadsaoil\.app|saunaspot\.ie)$"
 )
 UTM_PARAMS = {"utm_source": "saunaguide.ie", "utm_medium": "referral", "utm_campaign": "listing"}
 
