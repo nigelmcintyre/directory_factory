@@ -25,6 +25,9 @@
             </h3>
             <div class="flex items-center gap-2 mt-2">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">{% firstof listing.county listing.city %}</span>
+                {% if listing.attributes.temporarily_closed %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-red-200 bg-red-50 text-red-700">Temporarily closed</span>
+                {% endif %}
                 {% if listing.distance_km != None %}
                     <span class="text-xs font-semibold text-slate-600">· {{ listing.distance_km }} km away</span>
                 {% endif %}
