@@ -30,6 +30,7 @@ class LinkTests(SimpleTestCase):
         self.assertEqual(link_type("http://buk.ie/twr"), "booking")
         self.assertEqual(link_type("https://link.wunderbook.com/tenant?tenantName=Wonky_Sauna_Howth"), "booking")
         self.assertEqual(link_type("https://fadsaoil.app/clontarf"), "booking")
+        self.assertEqual(link_type("https://fareharbor.com/embeds/book/splashsports/items/631335/"), "booking")
         self.assertEqual(link_type("https://thehotboxsauna.ie/"), "website")
 
     def test_with_utm_preserves_query_and_fragment(self):
